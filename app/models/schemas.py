@@ -88,6 +88,10 @@ class ExplainabilityFactor(BaseModel):
 class SVIResult(BaseModel):
     score: int = Field(ge=0, le=100)
     risk_level: RiskLevel
+    stress_score: int = Field(default=50, ge=0, le=100)
+    trauma_score: int = Field(default=50, ge=0, le=100)
+    emotional_state: str = "Neutral"
+    recommended_next_action: str = "Authorized professional review recommended."
     confidence: float = Field(ge=0.0, le=1.0)
     is_uncertain: bool = False
     uncertainty_note: Optional[str] = None
@@ -139,7 +143,17 @@ class CaseRecord(BaseModel):
     state: str
     consent_recorded: bool
     svi_score: int
+    stress_score: int = 50
+    trauma_score: int = 50
+    emotional_state: str = "Neutral"
+    recommended_next_action: str = "Authorized professional review recommended."
     risk_level: RiskLevel
+    priority: str = "Standard"  # "Standard", "Priority", "Urgent"
+    alert_status: str = "Normal"  # "Normal", "High-Risk Alert", "Acknowledged"
+    referral_status: str = "None"  # "Counselor Referred", "Legal Aid Referred", "Emergency Dispatched", "Self-Help Guided", "None"
+    follow_up_date: Optional[str] = None
+    support_received: bool = False
+    support_outcome_notes: Optional[str] = None
     confidence: float
     status: str  # "Pending", "Under Review", "Assigned", "Resolved"
     assigned_officer: Optional[str] = None
@@ -162,7 +176,54 @@ class FollowUpItem(BaseModel):
     assigned_to: str
     status: str  # "Upcoming", "Overdue", "Completed"
     notes: Optional[str] = None
+    support_received: bool = False
+    outcome_notes: Optional[str] = None
+    previous_svi: Optional[int] = None
+    current_svi: Optional[int] = None
     historical_svi: List[Dict[str, Any]] = []  # e.g., [{"date": "2026-09-20", "svi": 82}]
+
+class ConversationTurnRequest(BaseModel):
+    session_id: str
+    turn_index: int
+    user_message: str
+    language: str = "Telugu"
+    channel: str = "Voice Assessment"
+    audio_present: bool = False
+    audio_duration_sec: Optional[float] = None
+
+class ConversationTurnResponse(BaseModel):
+    session_id: str
+    turn_index: int
+    max_turns: int
+    is_complete: bool
+    ai_response: str
+    progress_pct: int
+    current_stress_score: int
+    current_trauma_score: int
+    current_risk_level: RiskLevel
+    emotional_state: str
+    detected_emotions: Dict[str, float]
+    detected_indicators: List[str]
+    final_assessment: Optional[SVIResult] = None
+    case_number: Optional[str] = None
+
+class ReferralActionRequest(BaseModel):
+    case_number: str
+    referral_type: str  # "Counselor", "Legal Aid", "Emergency", "Self-Help"
+    assignee_name: Optional[str] = None
+    notes: Optional[str] = None
+    scheduled_followup_date: Optional[str] = None
+
+class AlertAcknowledgeRequest(BaseModel):
+    case_number: str
+    acknowledged_by: str = "Officer Rajesh Kumar"
+    notes: Optional[str] = None
+
+class SupportOutcomeRequest(BaseModel):
+    case_number: str
+    support_received: bool
+    outcome_notes: str
+    recorded_by: str = "Officer Rajesh Kumar"
 
 class SupportResource(BaseModel):
     id: str

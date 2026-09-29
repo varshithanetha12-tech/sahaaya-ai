@@ -172,3 +172,113 @@ async def trigger_emergency_action(case_number: str, req: EmergencyActionRequest
     )
 
     return res
+
+@router.post("/{case_number}/referral")
+async def update_referral_status(case_number: str, req: dict):
+    """
+    Update the referral status for a case (Counselor, Legal Aid, Emergency, Self-Help).
+    """
+    from app.models.schemas import ReferralActionRequest
+    from pydantic import ValidationError
+    try:
+        referral_req = ReferralActionRequest(**req)
+    except Exception:
+        referral_req = None
+
+    case = db.get_case_by_number(case_number)
+    if not case:
+        raise HTTPException(status_code=404, detail="Case not found.")
+
+    referral_type = req.get("referral_type", "Counselor") if isinstance(req, dict) else "Counselor"
+    assignee = req.get("assignee_name") if isinstance(req, dict) else None
+    notes = req.get("notes") if isinstance(req, dict) else None
+    follow_up = req.get("scheduled_followup_date") if isinstance(req, dict) else None
+
+    type_map = {
+        "Counselor": "Counselor Referred",
+        "Legal Aid": "Legal Aid Referred",
+        "Emergency": "Emergency Dispatched",
+        "Self-Help": "Self-Help Guided"
+    }
+    case.referral_status = type_map.get(referral_type, f"{referral_type} Referred")
+    if follow_up:
+        case.follow_up_date = follow_up
+    case.timeline.append({
+        "time": datetime.now().strftime("%I:%M %p"),
+        "title": f"Referral Updated: {referral_type}",
+        "desc": f"Referral status set to '{case.referral_status}'. Assigned to: {assignee or 'Auto-assigned'}.",
+        "status": "done"
+    })
+
+    db.log_audit(
+        action=f"Referral Action: {referral_type}",
+        case_id=case.case_number,
+        access_type="ASSIGN",
+        details=f"Referral status: {case.referral_status}. Notes: {notes or 'None'}."
+    )
+
+    return {"success": True, "referral_status": case.referral_status, "follow_up_date": case.follow_up_date}
+
+@router.post("/{case_number}/alert/acknowledge")
+async def acknowledge_alert(case_number: str, req: dict):
+    """
+    Acknowledge a high-risk alert for a case.
+    """
+    case = db.get_case_by_number(case_number)
+    if not case:
+        raise HTTPException(status_code=404, detail="Case not found.")
+
+    acknowledged_by = req.get("acknowledged_by", "Officer Rajesh Kumar") if isinstance(req, dict) else "Officer Rajesh Kumar"
+    notes = req.get("notes") if isinstance(req, dict) else None
+
+    case.alert_status = "Acknowledged"
+    case.assigned_officer = acknowledged_by
+    case.status = "Under Review"
+    case.timeline.append({
+        "time": datetime.now().strftime("%I:%M %p"),
+        "title": "High-Risk Alert Acknowledged",
+        "desc": f"Alert reviewed and acknowledged by {acknowledged_by}. {notes or ''}",
+        "status": "done"
+    })
+
+    db.log_audit(
+        action="High-Risk Alert Acknowledged",
+        case_id=case.case_number,
+        access_type="WRITE",
+        details=f"Acknowledged by {acknowledged_by}. Notes: {notes or 'None'}."
+    )
+
+    return {"success": True, "alert_status": case.alert_status, "assigned_officer": case.assigned_officer}
+
+@router.post("/{case_number}/support-outcome")
+async def record_support_outcome(case_number: str, req: dict):
+    """
+    Record support outcome for a case after follow-up completion.
+    """
+    case = db.get_case_by_number(case_number)
+    if not case:
+        raise HTTPException(status_code=404, detail="Case not found.")
+
+    support_received = req.get("support_received", False) if isinstance(req, dict) else False
+    outcome_notes = req.get("outcome_notes", "") if isinstance(req, dict) else ""
+    recorded_by = req.get("recorded_by", "Officer Rajesh Kumar") if isinstance(req, dict) else "Officer Rajesh Kumar"
+
+    case.support_received = support_received
+    case.support_outcome_notes = outcome_notes
+    if support_received:
+        case.status = "Resolved"
+    case.timeline.append({
+        "time": datetime.now().strftime("%I:%M %p"),
+        "title": "Support Outcome Recorded",
+        "desc": f"Support received: {'Yes' if support_received else 'No'}. Notes: {outcome_notes}. By: {recorded_by}.",
+        "status": "done"
+    })
+
+    db.log_audit(
+        action="Support Outcome Recorded",
+        case_id=case.case_number,
+        access_type="WRITE",
+        details=f"Support received: {support_received}. Outcome: {outcome_notes}."
+    )
+
+    return {"success": True, "support_received": case.support_received, "case_status": case.status}

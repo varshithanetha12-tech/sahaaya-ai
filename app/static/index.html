@@ -271,8 +271,562 @@
         <!-- ================================================================= -->
         <section id="victim-view" class="view-section hidden max-w-5xl mx-auto px-4 sm:px-6 py-8">
             
-            <!-- Victim Submission Sub-Section -->
-            <div id="victimSubmissionSection">
+            <!-- VICTIM PORTAL SUB-NAV BAR -->
+            <div class="bg-white p-3 rounded-2xl border border-slate-200 shadow-sm mb-6 flex flex-wrap items-center justify-between gap-2">
+                <div class="flex flex-wrap items-center gap-1.5 text-xs font-bold">
+                    <button id="vsub-start" onclick="App.switchVictimSubTab('start-assessment')" class="vsub-btn px-3.5 py-2 rounded-xl bg-teal-600 text-white shadow-sm flex items-center space-x-1.5 transition">
+                        <span>✨ Start Assessment</span>
+                    </button>
+                    <button id="vsub-voice" onclick="App.switchVictimSubTab('voice-assessment')" class="vsub-btn px-3.5 py-2 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 flex items-center space-x-1.5 transition">
+                        <span>🎙️ Voice Assessment</span>
+                    </button>
+                    <button id="vsub-text" onclick="App.switchVictimSubTab('text-assessment')" class="vsub-btn px-3.5 py-2 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 flex items-center space-x-1.5 transition">
+                        <span>📝 Text Assessment</span>
+                    </button>
+                    <button id="vsub-my-assessment" onclick="App.switchVictimSubTab('my-assessment')" class="vsub-btn px-3.5 py-2 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 flex items-center space-x-1.5 transition">
+                        <span>📊 My Assessment</span>
+                    </button>
+                    <button id="vsub-my-support" onclick="App.switchVictimSubTab('my-support')" class="vsub-btn px-3.5 py-2 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 flex items-center space-x-1.5 transition">
+                        <span>🤝 My Support</span>
+                    </button>
+                    <button id="vsub-followups" onclick="App.switchVictimSubTab('my-followups')" class="vsub-btn px-3.5 py-2 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 flex items-center space-x-1.5 transition">
+                        <span>📅 Follow-ups</span>
+                    </button>
+                    <button id="vsub-resources" onclick="App.switchVictimSubTab('resources')" class="vsub-btn px-3.5 py-2 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 flex items-center space-x-1.5 transition">
+                        <span>📍 Resources</span>
+                    </button>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <button onclick="App.triggerEmergencySOS()" class="px-3.5 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-black shadow-sm flex items-center space-x-1.5 transition animate-pulse">
+                        <span>🚨 Help Now (14566)</span>
+                    </button>
+                    <button onclick="App.showConsentModal()" class="px-3 py-2 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-600 text-xs font-semibold flex items-center space-x-1 transition" title="Privacy & Consent Settings">
+                        <span>🔒 Privacy</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- CONVERSATIONAL ASSESSMENT SECTION -->
+            <div id="conversationalAssessmentSection" class="space-y-6">
+                <!-- Assessment Header Card -->
+                <div class="bg-gradient-to-r from-teal-900 via-slate-900 to-teal-950 text-white p-6 sm:p-7 rounded-2xl shadow-md border border-teal-800">
+                    <div class="flex flex-wrap items-center justify-between gap-4">
+                        <div>
+                            <div class="flex items-center space-x-2">
+                                <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                                <span class="text-xs font-bold text-teal-300 uppercase tracking-wider">Empathetic AI Conversational Assessment</span>
+                            </div>
+                            <h2 class="text-xl sm:text-2xl font-bold mt-1.5 text-white">
+                                Multi-turn Trauma, Stress & Prosody Evaluation
+                            </h2>
+                            <p class="text-xs text-teal-100/80 mt-1 max-w-2xl leading-relaxed">
+                                Our AI conversational agent listens empathetically, tracking linguistic distress, emotional shock, and speech prosody across questions in your native language.
+                            </p>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <button onclick="App.loadTeluguVoiceDemo()" class="px-4 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs shadow transition flex items-center space-x-1.5">
+                                <span>⚡ Telugu Voice Demo</span>
+                            </button>
+                            <button onclick="App.startConversationalAssessment()" class="px-3.5 py-2 rounded-xl bg-teal-700/80 hover:bg-teal-600 border border-teal-500 text-white text-xs font-medium transition flex items-center space-x-1">
+                                <span>🔄 Reset Session</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Language and Controls Strip -->
+                    <div class="mt-5 pt-4 border-t border-teal-800/80 flex flex-wrap items-center justify-between gap-3 text-xs">
+                        <div class="flex items-center space-x-3">
+                            <span class="text-teal-200 font-semibold">Assessment Language:</span>
+                            <select id="convLanguageSelect" onchange="App.setConvLanguage(this.value)" class="bg-slate-900/90 border border-teal-600 rounded-lg px-3 py-1.5 text-white text-xs font-medium focus:outline-none focus:ring-1 focus:ring-teal-400">
+                                <option value="Telugu" selected>తెలుగు (Telugu)</option>
+                                <option value="Hindi">हिन्दी (Hindi)</option>
+                                <option value="Tamil">தமிழ் (Tamil)</option>
+                                <option value="Kannada">ಕನ್ನಡ (Kannada)</option>
+                                <option value="Malayalam">മലയാളം (Malayalam)</option>
+                                <option value="Marathi">मराठी (Marathi)</option>
+                                <option value="Bengali">বাংলা (Bengali)</option>
+                                <option value="English">English</option>
+                            </select>
+                            <span class="text-teal-300 text-[11px] bg-teal-950/60 px-2 py-0.5 rounded border border-teal-800">
+                                Indic Multimodal Model v3.2
+                            </span>
+                        </div>
+                        <div class="text-[11px] text-teal-200 flex items-center space-x-2">
+                            <span class="inline-block w-2 h-2 rounded-full bg-emerald-400"></span>
+                            <span>Privacy Encrypted • PII Masked</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Step Progress Bar & Live Gauges Card -->
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm space-y-4">
+                    <!-- Progress Bar Row -->
+                    <div class="flex flex-wrap items-center justify-between gap-2 text-xs">
+                        <div class="font-bold text-slate-800 flex items-center space-x-2">
+                            <span class="text-teal-700">Assessment Progress:</span>
+                            <span>Step <span id="convTurnNum" class="text-teal-800 font-extrabold text-sm">1</span> of 4</span>
+                            <span class="text-slate-400 font-normal">(<span id="convProgressPct">25</span>% Completed)</span>
+                        </div>
+                        <div class="text-xs font-semibold text-slate-500">
+                            Dynamic Adaptive Triage
+                        </div>
+                    </div>
+                    <!-- Progress Track -->
+                    <div class="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden border border-slate-200">
+                        <div id="convProgressBarFill" class="h-full bg-gradient-to-r from-teal-500 to-teal-700 transition-all duration-500 rounded-full" style="width: 25%"></div>
+                    </div>
+
+                    <!-- Live Dynamic Gauges Grid -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 pt-3 border-t border-slate-100">
+                        <!-- Gauge 1: Stress Score -->
+                        <div class="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                            <div class="flex items-center justify-between text-xs font-semibold text-slate-600 mb-1">
+                                <span>Live Stress Score</span>
+                                <span id="convStressScore" class="font-black text-rose-700">0 / 100</span>
+                            </div>
+                            <div class="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+                                <div id="convStressBar" class="h-full bg-rose-500 transition-all duration-500" style="width: 0%"></div>
+                            </div>
+                        </div>
+
+                        <!-- Gauge 2: Trauma Score -->
+                        <div class="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                            <div class="flex items-center justify-between text-xs font-semibold text-slate-600 mb-1">
+                                <span>Live Trauma Score</span>
+                                <span id="convTraumaScore" class="font-black text-purple-700">0 / 100</span>
+                            </div>
+                            <div class="w-full h-2 bg-slate-200 rounded-full overflow-hidden">
+                                <div id="convTraumaBar" class="h-full bg-purple-600 transition-all duration-500" style="width: 0%"></div>
+                            </div>
+                        </div>
+
+                        <!-- Gauge 3: Current Risk Tier -->
+                        <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 flex flex-col justify-between">
+                            <div class="text-xs font-semibold text-slate-600">Current Risk Tier</div>
+                            <div class="mt-1">
+                                <span id="convRiskBadge" class="px-2.5 py-1 rounded-full text-xs font-black bg-emerald-100 text-emerald-800 border border-emerald-300">
+                                    LOW
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Gauge 4: Emotional State / Dominant Emotion -->
+                        <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 flex flex-col justify-between">
+                            <div class="text-xs font-semibold text-slate-600">Affective State</div>
+                            <div id="convEmotionalState" class="text-xs font-bold text-slate-800 truncate mt-1">
+                                Initializing assessment...
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Live Detected Emotional Pills -->
+                    <div class="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2">
+                        <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Detected Emotional Signals:</span>
+                        <div id="convEmotionPills" class="flex flex-wrap items-center gap-1.5 text-xs">
+                            <span class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[11px] font-medium">Fear (0%)</span>
+                            <span class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[11px] font-medium">Anxiety (0%)</span>
+                            <span class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[11px] font-medium">Distress (0%)</span>
+                            <span class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[11px] font-medium">Sadness (0%)</span>
+                            <span class="px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 text-[11px] font-medium">Anger (0%)</span>
+                            <span class="px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-800 text-[11px] font-medium">Calm</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Chat Stream Container -->
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                    <div class="bg-slate-100/70 px-5 py-3 border-b border-slate-200 flex items-center justify-between text-xs">
+                        <div class="flex items-center space-x-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-teal-600 animate-pulse"></span>
+                            <span class="font-bold text-slate-800">Sahaaya Conversational Assessment Session</span>
+                        </div>
+                        <span id="convSessionBadge" class="font-mono text-slate-500 text-[11px]">Connecting...</span>
+                    </div>
+
+                    <div id="convMessagesContainer" class="p-5 sm:p-6 bg-slate-50/50 min-h-[300px] max-h-[460px] overflow-y-auto space-y-4">
+                        <!-- Messages dynamically rendered here -->
+                    </div>
+
+                    <!-- Audio Simulation Visualizer Strip -->
+                    <div id="convAudioIndicator" class="hidden px-5 py-2.5 bg-slate-900 text-teal-300 text-xs flex items-center justify-between border-t border-slate-800">
+                        <div class="flex items-center space-x-2">
+                            <span class="w-2.5 h-2.5 rounded-full bg-rose-500 animate-ping"></span>
+                            <span class="font-semibold text-slate-200">Acoustic Prosody & Pitch Tremor Tracking</span>
+                        </div>
+                        <span class="font-mono text-xs bg-slate-800 px-2 py-0.5 rounded text-teal-400">Duration: 26.5s simulated</span>
+                    </div>
+
+                    <!-- Input Area -->
+                    <div class="p-4 sm:p-5 bg-white border-t border-slate-200 space-y-3">
+                        <textarea id="convUserInput" rows="3" class="w-full p-3.5 border border-slate-300 rounded-xl text-xs text-slate-800 leading-relaxed focus:ring-2 focus:ring-teal-500 focus:outline-none" placeholder="Speak or describe what happened in your own words..."></textarea>
+                        
+                        <div class="flex flex-wrap items-center justify-between gap-3">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <button id="convVoiceToggleBtn" onclick="App.toggleConvVoice()" class="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition flex items-center space-x-1.5 border border-slate-300">
+                                    <span id="convVoiceBtnText">🎙️ Record / Simulate Voice</span>
+                                </button>
+                                <button onclick="App.loadTeluguVoiceDemo()" class="px-3.5 py-2 rounded-xl bg-teal-50 hover:bg-teal-100 text-teal-800 text-xs font-bold transition border border-teal-300 flex items-center space-x-1.5">
+                                    <span>⚡ Use Telugu Voice Scenario</span>
+                                </button>
+                            </div>
+
+                            <button onclick="App.sendConversationMessage()" class="px-6 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-md transition flex items-center space-x-2">
+                                <span>Send Message</span>
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CONVERSATIONAL RESULT SECTION -->
+            <div id="conversationalResultSection" class="hidden space-y-6">
+                <!-- Result Header Card -->
+                <div class="bg-white p-6 sm:p-7 rounded-2xl border border-slate-200 shadow-md">
+                    <div class="flex flex-wrap items-center justify-between pb-5 border-b border-slate-200 gap-4">
+                        <div>
+                            <div class="flex items-center space-x-2">
+                                <span class="text-xs font-bold text-teal-700 uppercase tracking-wide">ASSESSMENT COMPLETE</span>
+                                <span class="text-slate-400">•</span>
+                                <span class="text-xs font-mono text-slate-600">Case ID: <strong id="resCaseNumber" class="text-teal-900 font-mono">NHAA-1024</strong></span>
+                            </div>
+                            <h2 class="text-2xl font-black text-slate-900 mt-1">Comprehensive Stress & Trauma Assessment Report</h2>
+                            <p class="text-xs text-slate-500 mt-0.5">Synthesized via Indic NLP semantics, emotion arousal analysis, and speech prosody markers.</p>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <span id="resRiskBadge" class="px-4 py-1.5 rounded-full text-xs font-black bg-rose-100 text-rose-800 border border-rose-300 animate-pulse">
+                                CRITICAL RISK
+                            </span>
+                            <button onclick="App.switchVictimSubTab('start-assessment')" class="px-3 py-1.5 rounded-lg border border-slate-300 text-xs font-semibold text-slate-700 hover:bg-slate-100">
+                                ↺ New Session
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Scores & Key Metrics Grid -->
+                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 py-5 border-b border-slate-200">
+                        <div class="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                            <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Stress Score</span>
+                            <div id="resStressScore" class="text-2xl font-black text-rose-700 mt-1">85 / 100</div>
+                            <span class="text-[10px] text-rose-600 font-medium">Heightened autonomic arousal</span>
+                        </div>
+                        <div class="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                            <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Trauma Score</span>
+                            <div id="resTraumaScore" class="text-2xl font-black text-purple-700 mt-1">88 / 100</div>
+                            <span class="text-[10px] text-purple-600 font-medium">Intimidation & boycott shock</span>
+                        </div>
+                        <div class="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                            <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Overall SVI Index</span>
+                            <div id="resSviScore" class="text-2xl font-black text-teal-800 mt-1">82 / 100</div>
+                            <span class="text-[10px] text-teal-700 font-medium">Composite Vulnerability</span>
+                        </div>
+                        <div class="p-3 bg-slate-50 rounded-xl border border-slate-200">
+                            <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Priority Routing</span>
+                            <div id="resPriority" class="text-2xl font-black text-amber-700 mt-1">Urgent</div>
+                            <span class="text-[10px] text-amber-600 font-medium">Automated Escalation</span>
+                        </div>
+                    </div>
+
+                    <!-- Emotional State Description Banner -->
+                    <div class="py-4">
+                        <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wide mb-2">Emotional State Synthesis:</h4>
+                        <div id="resEmotionalState" class="p-3.5 rounded-xl bg-indigo-50 border border-indigo-200 text-xs text-indigo-950 font-medium leading-relaxed">
+                            Severe fear arousal, persistent threat trauma, and profound social isolation detected. Autonomic tremor markers consistent with severe distress.
+                        </div>
+                    </div>
+
+                    <!-- Explainable Factors List -->
+                    <div class="py-4 border-t border-slate-100">
+                        <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wide mb-3 flex items-center justify-between">
+                            <span>🔍 Safe Contributing Factors (Explainable AI Analysis)</span>
+                            <span class="text-[11px] text-teal-700 font-normal">Transparent decomposition</span>
+                        </h4>
+                        <div id="resExplainabilityList" class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <!-- Populated dynamically -->
+                        </div>
+                    </div>
+
+                    <!-- Recommended Next Action Banner -->
+                    <div class="py-4 border-t border-slate-100">
+                        <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wide mb-2">Recommended Immediate Protocol:</h4>
+                        <div id="resRecommendedAction" class="p-4 rounded-xl bg-amber-50 border border-amber-300 text-xs font-bold text-amber-950 leading-relaxed">
+                            Urgent human review flagged. Immediate counselor referral via Tele-MANAS (14416) and District Legal Services Authority (DLSA) defense notice advised.
+                        </div>
+                    </div>
+
+                    <!-- Support Options & Direct Referral Buttons -->
+                    <div class="mt-4 pt-5 border-t border-slate-200">
+                        <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wide mb-3">Available Support Pathways & Fast Institutional Referrals:</h4>
+                        
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                            <button id="resBtnCounselor" onclick="App.requestAssessmentReferral('Counselor')" class="p-3 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold transition flex items-center space-x-2 shadow-sm">
+                                <span>🧠 Request Counselor (Tele-MANAS)</span>
+                            </button>
+                            <button id="resBtnLegal" onclick="App.requestAssessmentReferral('Legal Aid')" class="p-3 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition flex items-center space-x-2 shadow-sm">
+                                <span>⚖️ Request Legal Aid Defense (DLSA)</span>
+                            </button>
+                            <button id="resBtnEmergency" onclick="App.requestAssessmentReferral('Emergency')" class="p-3 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition flex items-center space-x-2 shadow-sm">
+                                <span>🚨 Dispatch Police Protection (112)</span>
+                            </button>
+                            <button onclick="App.openNewFollowupModal()" class="p-3 rounded-xl bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold transition flex items-center space-x-2 shadow-sm">
+                                <span>📅 Schedule Follow-up Session</span>
+                            </button>
+                            <button onclick="App.switchVictimSubTab('resources')" class="p-3 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition flex items-center space-x-2 border border-slate-200">
+                                <span>📍 Access Relief Resources Directory</span>
+                            </button>
+                            <button onclick="App.switchVictimSubTab('my-support')" class="p-3 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-900 text-xs font-bold transition flex items-center space-x-2 border border-indigo-200">
+                                <span>🤝 View My Assigned Support</span>
+                            </button>
+                        </div>
+
+                        <!-- Toast / Status message after referral clicked -->
+                        <div id="resReferralFeedback" class="hidden mt-3 p-3 rounded-xl bg-emerald-50 border border-emerald-300 text-emerald-900 text-xs font-semibold flex items-center space-x-2">
+                            <span class="w-2 h-2 rounded-full bg-emerald-600"></span>
+                            <span id="resReferralFeedbackText">Referral processed.</span>
+                        </div>
+                    </div>
+
+                    <!-- Disclaimer -->
+                    <div class="mt-6 pt-4 border-t border-slate-200 text-[11px] text-slate-500 leading-relaxed bg-slate-50 p-3 rounded-xl">
+                        <strong>Official Statutory Disclaimer:</strong> This assessment is an AI-assisted decision-support triage indicator. It is NOT a clinical psychological or medical diagnosis. All high and critical risk cases are automatically escalated to authorized human professionals under the SC/ST (Prevention of Atrocities) framework.
+                    </div>
+                </div>
+            </div>
+
+            <!-- VICTIM MY SUPPORT SECTION -->
+            <div id="victimMySupportSection" class="hidden space-y-6">
+                <div class="bg-white p-6 sm:p-7 rounded-2xl border border-slate-200 shadow-sm">
+                    <div class="flex flex-wrap items-center justify-between pb-4 border-b border-slate-200 gap-3">
+                        <div>
+                            <span class="text-xs font-bold text-teal-700 uppercase tracking-wide">STATUTORY AID ECOSYSTEM</span>
+                            <h2 class="text-xl sm:text-2xl font-black text-slate-900 mt-1">My Assigned Support Services</h2>
+                            <p class="text-xs text-slate-500 mt-0.5">Government-mandated multi-agency protection, psychological stabilization, and legal defense services.</p>
+                        </div>
+                        <button onclick="App.switchVictimSubTab('start-assessment')" class="px-3.5 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold transition">
+                            + Take Assessment
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
+                        <!-- Support 1: Tele-MANAS -->
+                        <div class="p-5 rounded-2xl border border-teal-200 bg-teal-50/40 flex flex-col justify-between">
+                            <div>
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="text-xs font-bold text-teal-900 uppercase">Psychological Support</span>
+                                    <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-teal-200 text-teal-900">Active</span>
+                                </div>
+                                <h3 class="font-bold text-base text-slate-900">National Tele-MANAS Cell</h3>
+                                <p class="text-xs text-slate-600 mt-1">Assigned Trauma Specialist: <strong>Dr. S. Rao (Psychiatric Social Worker)</strong></p>
+                                <div class="text-xs text-slate-500 mt-2">
+                                    Confidential 24x7 trauma stabilization and counseling in Telugu. Direct hotline: <strong class="text-teal-800">14416</strong>.
+                                </div>
+                            </div>
+                            <div class="mt-4 pt-3 border-t border-teal-200 flex items-center justify-between">
+                                <span class="text-[11px] text-teal-700 font-semibold">Toll-Free • 24x7</span>
+                                <a href="tel:14416" class="px-3 py-1.5 rounded-lg bg-teal-700 hover:bg-teal-800 text-white text-xs font-bold transition">Call 14416</a>
+                            </div>
+                        </div>
+
+                        <!-- Support 2: DLSA Legal Counsel -->
+                        <div class="p-5 rounded-2xl border border-blue-200 bg-blue-50/40 flex flex-col justify-between">
+                            <div>
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="text-xs font-bold text-blue-900 uppercase">Statutory Legal Aid</span>
+                                    <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-200 text-blue-900">Assigned</span>
+                                </div>
+                                <h3 class="font-bold text-base text-slate-900">District Legal Services Authority (DLSA)</h3>
+                                <p class="text-xs text-slate-600 mt-1">Designated Defense Counsel: <strong>Adv. K. Murthy (Rangareddy Bar)</strong></p>
+                                <div class="text-xs text-slate-500 mt-2">
+                                    Free statutory legal representation under SC/ST PoA Section 15A. Assists with FIR registration and protective court petitions.
+                                </div>
+                            </div>
+                            <div class="mt-4 pt-3 border-t border-blue-200 flex items-center justify-between">
+                                <span class="text-[11px] text-blue-700 font-semibold">NALSA Helpline: 15100</span>
+                                <a href="tel:15100" class="px-3 py-1.5 rounded-lg bg-blue-700 hover:bg-blue-800 text-white text-xs font-bold transition">Call 15100</a>
+                            </div>
+                        </div>
+
+                        <!-- Support 3: Police Protection Unit -->
+                        <div class="p-5 rounded-2xl border border-rose-200 bg-rose-50/40 flex flex-col justify-between">
+                            <div>
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="text-xs font-bold text-rose-900 uppercase">Physical Safety</span>
+                                    <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-rose-200 text-rose-900">On Standby</span>
+                                </div>
+                                <h3 class="font-bold text-base text-slate-900">District Atrocity Protection Unit</h3>
+                                <p class="text-xs text-slate-600 mt-1">Nodal Officer: <strong>Officer Rajesh Kumar (SP-Cell)</strong></p>
+                                <div class="text-xs text-slate-500 mt-2">
+                                    Emergency police escort, night residential picketing, and witness protection protocol available on alert.
+                                </div>
+                            </div>
+                            <div class="mt-4 pt-3 border-t border-rose-200 flex items-center justify-between">
+                                <span class="text-[11px] text-rose-700 font-semibold">Emergency: 112 / 14566</span>
+                                <button onclick="App.triggerEmergencySOS()" class="px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition">Alert Officer</button>
+                            </div>
+                        </div>
+
+                        <!-- Support 4: Victim Compensation -->
+                        <div class="p-5 rounded-2xl border border-amber-200 bg-amber-50/40 flex flex-col justify-between">
+                            <div>
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="text-xs font-bold text-amber-900 uppercase">Welfare & Compensation</span>
+                                    <span class="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-200 text-amber-900">Under Review</span>
+                                </div>
+                                <h3 class="font-bold text-base text-slate-900">PoA Relief & Rehabilitation Scheme</h3>
+                                <p class="text-xs text-slate-600 mt-1">Administering Agency: <strong>Social Welfare Department, Telangana</strong></p>
+                                <div class="text-xs text-slate-500 mt-2">
+                                    Direct Benefit Transfer (DBT) relief sanction under PoA Rules Schedule Annexure-I for atrocity survivors.
+                                </div>
+                            </div>
+                            <div class="mt-4 pt-3 border-t border-amber-200 flex items-center justify-between">
+                                <span class="text-[11px] text-amber-700 font-semibold">Grievance Portal</span>
+                                <button onclick="App.showToast('Rehabilitation inquiry submitted.', 'info')" class="px-3 py-1.5 rounded-lg bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold transition">Track Relief</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VICTIM FOLLOW-UPS SECTION -->
+            <div id="victimFollowupsSection" class="hidden space-y-6">
+                <div class="bg-white p-6 sm:p-7 rounded-2xl border border-slate-200 shadow-sm">
+                    <div class="flex flex-wrap items-center justify-between pb-4 border-b border-slate-200 gap-3">
+                        <div>
+                            <span class="text-xs font-bold text-teal-700 uppercase tracking-wide">HEALING & PROGRESSION</span>
+                            <h2 class="text-xl sm:text-2xl font-black text-slate-900 mt-1">My Follow-Up Schedule & Vulnerability Trend</h2>
+                            <p class="text-xs text-slate-500 mt-0.5">Continuous psychological check-ins and longitudinal trauma monitoring.</p>
+                        </div>
+                        <button onclick="App.openNewFollowupModal()" class="px-3.5 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold transition">
+                            + Request Follow-up
+                        </button>
+                    </div>
+
+                    <!-- SVI Trauma Progression Mini Tracker -->
+                    <div class="my-6 p-4 rounded-xl bg-slate-50 border border-slate-200">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-bold text-slate-800 uppercase tracking-wide">Distress Trajectory Indicator</span>
+                            <span class="text-xs text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded">Trend: Distress Decreasing (82 → 64)</span>
+                        </div>
+                        <div class="w-full bg-slate-200 h-2.5 rounded-full overflow-hidden">
+                            <div class="bg-emerald-500 h-full rounded-full" style="width: 65%"></div>
+                        </div>
+                        <div class="flex justify-between text-[11px] text-slate-500 mt-1.5">
+                            <span>Initial Session: SVI 82 (High)</span>
+                            <span>Check-in 1: SVI 72</span>
+                            <span>Check-in 2: SVI 64 (Moderate)</span>
+                        </div>
+                    </div>
+
+                    <!-- Upcoming Sessions List -->
+                    <div class="space-y-3">
+                        <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wide mb-2">Scheduled Sessions:</h4>
+                        
+                        <div class="p-4 rounded-xl border border-slate-200 bg-white hover:border-teal-300 transition flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-sm">
+                            <div class="flex items-start space-x-3">
+                                <div class="w-10 h-10 rounded-xl bg-teal-100 text-teal-800 font-bold flex flex-col items-center justify-center text-xs">
+                                    <span>SEP</span>
+                                    <span class="text-sm font-black -mt-1">30</span>
+                                </div>
+                                <div>
+                                    <div class="text-xs font-bold text-slate-900">Psychological Follow-Up Session #2</div>
+                                    <div class="text-xs text-slate-500">Counsellor: Dr. S. Rao • Tele-MANAS Helpline</div>
+                                    <div class="text-[11px] text-teal-700 mt-0.5 font-medium">Mode: Direct Inbound Tele-counseling</div>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800">Upcoming (Tomorrow 03:00 PM)</span>
+                            </div>
+                        </div>
+
+                        <div class="p-4 rounded-xl border border-slate-200 bg-white hover:border-teal-300 transition flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-sm">
+                            <div class="flex items-start space-x-3">
+                                <div class="w-10 h-10 rounded-xl bg-blue-100 text-blue-800 font-bold flex flex-col items-center justify-center text-xs">
+                                    <span>OCT</span>
+                                    <span class="text-sm font-black -mt-1">04</span>
+                                </div>
+                                <div>
+                                    <div class="text-xs font-bold text-slate-900">Legal Aid Defense Consultation</div>
+                                    <div class="text-xs text-slate-500">Counsel: Adv. K. Murthy • DLSA Triage Center</div>
+                                    <div class="text-[11px] text-blue-700 mt-0.5 font-medium">Mode: In-person or Video Consultation</div>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-2">
+                                <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-blue-100 text-blue-800">Confirmed</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- VICTIM RESOURCES SECTION -->
+            <div id="victimResourcesSection" class="hidden space-y-6">
+                <div class="bg-white p-6 sm:p-7 rounded-2xl border border-slate-200 shadow-sm">
+                    <div class="flex flex-wrap items-center justify-between pb-4 border-b border-slate-200 gap-3">
+                        <div>
+                            <span class="text-xs font-bold text-teal-700 uppercase tracking-wide">24x7 DIRECT CRISIS LINES</span>
+                            <h2 class="text-xl sm:text-2xl font-black text-slate-900 mt-1">Emergency & Relief Directory</h2>
+                            <p class="text-xs text-slate-500 mt-0.5">Government-backed helplines, police control, mental health support, and legal assistance.</p>
+                        </div>
+                        <button onclick="App.triggerEmergencySOS()" class="px-3.5 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition flex items-center space-x-1.5">
+                            <span>🚨 Call 14566 Now</span>
+                        </button>
+                    </div>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
+                        <!-- Hotlines -->
+                        <div class="p-5 rounded-2xl border border-rose-300 bg-rose-50/50">
+                            <div class="text-xs font-bold text-rose-700 uppercase mb-1">National Helpline</div>
+                            <div class="text-2xl font-black text-rose-900">14566</div>
+                            <div class="text-xs text-slate-700 font-semibold mt-1">National Atrocity Helpline (NAH)</div>
+                            <div class="text-xs text-slate-500 mt-1">Toll-free 24x7 pan-India grievance intake in all 22 official Indian languages.</div>
+                            <a href="tel:14566" class="mt-4 inline-block w-full text-center py-2 bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs rounded-xl transition">Dial 14566</a>
+                        </div>
+
+                        <div class="p-5 rounded-2xl border border-teal-300 bg-teal-50/50">
+                            <div class="text-xs font-bold text-teal-700 uppercase mb-1">Mental Health & Trauma</div>
+                            <div class="text-2xl font-black text-teal-900">14416</div>
+                            <div class="text-xs text-slate-700 font-semibold mt-1">Tele-MANAS Mental Health Support</div>
+                            <div class="text-xs text-slate-500 mt-1">Free 24x7 mental health counseling, trauma stabilization, and psychiatrist consultation.</div>
+                            <a href="tel:14416" class="mt-4 inline-block w-full text-center py-2 bg-teal-700 hover:bg-teal-800 text-white font-bold text-xs rounded-xl transition">Dial 14416</a>
+                        </div>
+
+                        <div class="p-5 rounded-2xl border border-slate-300 bg-slate-50">
+                            <div class="text-xs font-bold text-slate-700 uppercase mb-1">Emergency Police / ERSS</div>
+                            <div class="text-2xl font-black text-slate-900">112</div>
+                            <div class="text-xs text-slate-700 font-semibold mt-1">Emergency Response Support System</div>
+                            <div class="text-xs text-slate-500 mt-1">Single pan-India emergency number for immediate police, fire, and medical dispatch.</div>
+                            <a href="tel:112" class="mt-4 inline-block w-full text-center py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl transition">Dial 112</a>
+                        </div>
+
+                        <div class="p-5 rounded-2xl border border-blue-200 bg-white">
+                            <div class="text-xs font-bold text-blue-700 uppercase mb-1">Free Legal Aid</div>
+                            <div class="text-2xl font-black text-blue-900">15100</div>
+                            <div class="text-xs text-slate-700 font-semibold mt-1">NALSA Legal Aid Helpline</div>
+                            <div class="text-xs text-slate-500 mt-1">National Legal Services Authority statutory counsel for marginalized communities.</div>
+                            <a href="tel:15100" class="mt-4 inline-block w-full text-center py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl transition">Dial 15100</a>
+                        </div>
+
+                        <div class="p-5 rounded-2xl border border-purple-200 bg-white">
+                            <div class="text-xs font-bold text-purple-700 uppercase mb-1">Women Helpline</div>
+                            <div class="text-2xl font-black text-purple-900">181</div>
+                            <div class="text-xs text-slate-700 font-semibold mt-1">National Women in Distress Line</div>
+                            <div class="text-xs text-slate-500 mt-1">24-hour toll-free crisis response, shelter referral, and legal protection for women.</div>
+                            <a href="tel:181" class="mt-4 inline-block w-full text-center py-2 bg-purple-600 hover:bg-purple-700 text-white font-bold text-xs rounded-xl transition">Dial 181</a>
+                        </div>
+
+                        <div class="p-5 rounded-2xl border border-emerald-200 bg-white">
+                            <div class="text-xs font-bold text-emerald-700 uppercase mb-1">Child Protection</div>
+                            <div class="text-2xl font-black text-emerald-900">1098</div>
+                            <div class="text-xs text-slate-700 font-semibold mt-1">Childline India Foundation</div>
+                            <div class="text-xs text-slate-500 mt-1">Emergency assistance and protective care for children in crisis situations.</div>
+                            <a href="tel:1098" class="mt-4 inline-block w-full text-center py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl transition">Dial 1098</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Victim Submission Sub-Section (Voice & Text Assessments) -->
+            <div id="victimSubmissionSection" class="hidden">
                 <!-- Calm Header -->
                 <div class="bg-gradient-to-r from-teal-800 to-slate-900 text-white p-6 sm:p-8 rounded-2xl shadow-md mb-6">
                     <div class="flex flex-wrap items-center justify-between gap-4">
@@ -567,6 +1121,24 @@
                 </div>
             </div>
 
+            <!-- OFFICER HIGH-RISK ALERT PANEL -->
+            <div id="officerHighRiskAlertPanel" class="my-6 p-4 sm:p-5 rounded-2xl bg-rose-50 border border-rose-300 shadow-sm">
+                <div class="flex flex-wrap items-center justify-between pb-3 border-b border-rose-200 gap-2">
+                    <div class="flex items-center space-x-2.5">
+                        <span class="w-3 h-3 bg-rose-600 rounded-full animate-ping"></span>
+                        <h3 class="text-sm font-black text-rose-900 uppercase tracking-wide">
+                            🚨 High-Risk & Critical Case Alerts (<span id="highRiskAlertCount">0</span> Active)
+                        </h3>
+                    </div>
+                    <span class="text-xs bg-rose-600 text-white font-bold px-2.5 py-1 rounded-full">
+                        Requires Immediate Officer Verification
+                    </span>
+                </div>
+                <div id="officerAlertCardsContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 mt-3.5">
+                    <!-- Populated dynamically via App.renderHighRiskAlertBanner() -->
+                </div>
+            </div>
+
             <!-- KPI Metric Cards (Section 10) -->
             <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 my-6">
                 <!-- Card 1 -->
@@ -651,6 +1223,24 @@
                         <option value="Assigned">Assigned</option>
                         <option value="Resolved">Resolved</option>
                     </select>
+
+                    <!-- Priority Filter -->
+                    <select id="filterPriority" onchange="App.fetchCases()" class="border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs bg-white text-slate-700 focus:outline-none">
+                        <option value="ALL">All Priorities</option>
+                        <option value="Urgent">🚨 Urgent</option>
+                        <option value="Priority">⚡ Priority</option>
+                        <option value="Standard">📋 Standard</option>
+                    </select>
+
+                    <!-- Referral Filter -->
+                    <select id="filterReferral" onchange="App.fetchCases()" class="border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs bg-white text-slate-700 focus:outline-none">
+                        <option value="ALL">All Referrals</option>
+                        <option value="Counselor">Counselor Referred</option>
+                        <option value="Legal Aid">Legal Aid Referred</option>
+                        <option value="Emergency">Emergency Dispatched</option>
+                        <option value="Self-Help">Self-Help Guided</option>
+                        <option value="None">None</option>
+                    </select>
                 </div>
 
                 <div class="text-xs text-slate-500 font-medium">
@@ -664,14 +1254,18 @@
                     <table class="w-full text-left border-collapse">
                         <thead>
                             <tr class="bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-600 uppercase tracking-wider">
-                                <th class="py-3 px-4">Case ID</th>
-                                <th class="py-3 px-4">Date</th>
-                                <th class="py-3 px-4">Language</th>
-                                <th class="py-3 px-4">Channel</th>
-                                <th class="py-3 px-4">SVI Score</th>
-                                <th class="py-3 px-4">Risk Tier</th>
-                                <th class="py-3 px-4">Status</th>
-                                <th class="py-3 px-4">Action</th>
+                                <th class="py-3 px-3">Case ID</th>
+                                <th class="py-3 px-3">Date</th>
+                                <th class="py-3 px-3">Alias</th>
+                                <th class="py-3 px-3">Language</th>
+                                <th class="py-3 px-3">Channel</th>
+                                <th class="py-3 px-3">SVI</th>
+                                <th class="py-3 px-3">Stress / Trauma</th>
+                                <th class="py-3 px-3">Risk Tier</th>
+                                <th class="py-3 px-3">Priority</th>
+                                <th class="py-3 px-3">Alert Status</th>
+                                <th class="py-3 px-3">Referral Status</th>
+                                <th class="py-3 px-3">Action</th>
                             </tr>
                         </thead>
                         <tbody id="casesTableBody" class="divide-y divide-slate-100">
@@ -735,10 +1329,18 @@
                     </div>
 
                     <!-- SVI Metric Display -->
-                    <div class="flex items-center space-x-6 text-right">
+                    <div class="flex items-center space-x-5 text-right">
                         <div>
-                            <span class="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">STRESS VULNERABILITY INDEX</span>
-                            <div id="cdSviScore" class="text-3xl font-black text-teal-800">82 / 100</div>
+                            <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Stress Score</span>
+                            <div id="cdStressScore" class="text-2xl font-black text-rose-700">--</div>
+                        </div>
+                        <div>
+                            <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wide">Trauma Score</span>
+                            <div id="cdTraumaScore" class="text-2xl font-black text-purple-700">--</div>
+                        </div>
+                        <div class="border-l border-slate-200 pl-4">
+                            <span class="text-[10px] font-bold text-slate-500 uppercase tracking-wide">SVI Triage Score</span>
+                            <div id="cdSviScore" class="text-2xl font-black text-teal-800">82 / 100</div>
                         </div>
                     </div>
                 </div>
@@ -760,6 +1362,35 @@
                     <div>
                         <span class="text-slate-500">Consent Recorded:</span>
                         <div class="font-bold text-emerald-700">✓ Formally Verified</div>
+                    </div>
+                </div>
+
+                <!-- Status & Referral Strip -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-4 border-t border-slate-100 mt-4 text-xs">
+                    <div>
+                        <span class="text-slate-500">Triage Priority:</span>
+                        <div class="mt-0.5"><span id="cdPriorityBadge" class="px-2 py-0.5 rounded text-xs font-bold bg-amber-100 text-amber-800">Priority</span></div>
+                    </div>
+                    <div>
+                        <span class="text-slate-500">Alert Status:</span>
+                        <div class="mt-0.5"><span id="cdAlertStatusBadge" class="px-2 py-0.5 rounded text-xs font-bold bg-rose-100 text-rose-800">High-Risk Alert</span></div>
+                    </div>
+                    <div>
+                        <span class="text-slate-500">Referral Status:</span>
+                        <div class="mt-0.5"><span id="cdReferralStatusBadge" class="px-2 py-0.5 rounded text-xs font-bold bg-teal-100 text-teal-800">Counselor Referred</span></div>
+                    </div>
+                    <div>
+                        <span class="text-slate-500">Emotional State:</span>
+                        <div id="cdEmotionalState" class="font-bold text-indigo-900 truncate mt-0.5">Severe Fear & Threat Trauma</div>
+                    </div>
+                </div>
+
+                <!-- Recommended Next Action Banner -->
+                <div class="mt-4 p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-950 flex items-start space-x-2">
+                    <span class="text-base">💡</span>
+                    <div>
+                        <strong class="font-bold">AI Recommended Next Action:</strong>
+                        <span id="cdRecommendedNextAction" class="ml-1 text-slate-700">Immediate counselor referral initiated. Authorized officer notification dispatched for priority follow-up.</span>
                     </div>
                 </div>
             </div>
@@ -838,8 +1469,55 @@
                         <span class="text-xs bg-slate-100 text-slate-700 px-2 py-0.5 rounded font-medium">Statutory Aid Allocation</span>
                     </div>
 
+                    <!-- Direct Referral Action Bar -->
+                    <div class="my-4 p-4 rounded-xl bg-slate-50 border border-slate-200">
+                        <div class="text-xs font-bold text-slate-800 uppercase tracking-wide mb-2.5 flex items-center justify-between">
+                            <span>Direct Institutional Referral Fast Actions</span>
+                            <span class="text-[11px] text-teal-700 font-semibold">Human-in-the-Loop Fast Dispatch</span>
+                        </div>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <button onclick="App.requestReferral(App.state.selectedCase.case_number, 'Counselor')" class="px-3 py-1.5 rounded-lg bg-teal-600 hover:bg-teal-700 text-white text-xs font-bold transition flex items-center space-x-1 shadow-sm">
+                                <span>🧠 Refer to Counselor</span>
+                            </button>
+                            <button onclick="App.requestReferral(App.state.selectedCase.case_number, 'Legal Aid')" class="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold transition flex items-center space-x-1 shadow-sm">
+                                <span>⚖️ Refer to Legal Aid</span>
+                            </button>
+                            <button onclick="App.requestReferral(App.state.selectedCase.case_number, 'Emergency')" class="px-3 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition flex items-center space-x-1 shadow-sm">
+                                <span>🚨 Dispatch Emergency</span>
+                            </button>
+                            <button onclick="App.requestReferral(App.state.selectedCase.case_number, 'Self-Help')" class="px-3 py-1.5 rounded-lg bg-slate-200 hover:bg-slate-300 text-slate-800 text-xs font-bold transition flex items-center space-x-1">
+                                <span>📖 Self-Help Guidance</span>
+                            </button>
+                        </div>
+                    </div>
+
                     <!-- Recommendations List -->
                     <div id="cdRecommendationsList" class="space-y-3 mt-4"></div>
+
+                    <!-- Support Outcome Recording Form -->
+                    <div class="mt-6 p-4 rounded-xl bg-emerald-50/70 border border-emerald-200">
+                        <div class="text-xs font-bold text-emerald-900 uppercase tracking-wide mb-2.5 flex items-center justify-between">
+                            <span>Support Service Outcome Confirmation</span>
+                            <span class="text-[11px] text-emerald-700 font-semibold">Post-Triage Audit</span>
+                        </div>
+                        <div class="space-y-3 text-xs">
+                            <div class="flex items-center space-x-2">
+                                <input id="cdSupportReceivedInput" type="checkbox" class="w-4 h-4 text-teal-600 rounded border-slate-300 focus:ring-teal-500">
+                                <label for="cdSupportReceivedInput" class="font-semibold text-slate-800 cursor-pointer">
+                                    Support successfully received by victim (Check to resolve case)
+                                </label>
+                            </div>
+                            <div>
+                                <label class="block font-medium text-slate-600 mb-1">Outcome Notes / Case Closure Details:</label>
+                                <textarea id="cdOutcomeNotesInput" rows="2" class="w-full p-2.5 rounded-lg border border-slate-300 text-xs text-slate-800 focus:ring-1 focus:ring-teal-500 focus:outline-none" placeholder="Record verification remarks, victim contact outcome, counseling notes..."></textarea>
+                            </div>
+                            <div class="flex items-center justify-end">
+                                <button onclick="App.submitSupportOutcome()" class="px-4 py-2 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold transition shadow-sm">
+                                    Save Support Outcome
+                                </button>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
                 <!-- Case Chronological Timeline (1 Col) (Section 12) -->

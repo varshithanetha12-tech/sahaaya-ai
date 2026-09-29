@@ -114,7 +114,14 @@ class DatabaseState:
             state=req.state or "Telangana",
             consent_recorded=req.consent_given,
             svi_score=svi_result.score,
+            stress_score=svi_result.stress_score,
+            trauma_score=svi_result.trauma_score,
+            emotional_state=svi_result.emotional_state,
+            recommended_next_action=svi_result.recommended_next_action,
             risk_level=svi_result.risk_level,
+            priority="Urgent" if svi_result.critical_safety_alert else ("Priority" if svi_result.risk_level == RiskLevel.HIGH else "Standard"),
+            alert_status="High-Risk Alert" if svi_result.risk_level in [RiskLevel.HIGH, RiskLevel.CRITICAL] else "Normal",
+            referral_status="None",
             confidence=svi_result.confidence,
             status="Pending" if not svi_result.critical_safety_alert else "Under Review",
             assigned_officer="Officer Rajesh Kumar" if svi_result.critical_safety_alert else None,
@@ -176,6 +183,26 @@ class DatabaseState:
         for c in self.cases:
             by_state[c.state] = by_state.get(c.state, 0) + 1
 
+        # Referral statistics
+        referrals = {}
+        for c in self.cases:
+            r = getattr(c, "referral_status", "None") or "None"
+            referrals[r] = referrals.get(r, 0) + 1
+
+        completed_fols = sum(1 for f in self.followups if f.status == "Completed")
+        total_fols = len(self.followups)
+        fol_rate = round((completed_fols / max(1, total_fols)) * 100, 1)
+
+        risk_trends = [
+            {"period": "Day -6", "avg_svi": 52, "critical_cases": 0},
+            {"period": "Day -5", "avg_svi": 55, "critical_cases": 1},
+            {"period": "Day -4", "avg_svi": 60, "critical_cases": 1},
+            {"period": "Day -3", "avg_svi": 58, "critical_cases": 2},
+            {"period": "Day -2", "avg_svi": 64, "critical_cases": 2},
+            {"period": "Yesterday", "avg_svi": 68, "critical_cases": 3},
+            {"period": "Today", "avg_svi": avg_svi, "critical_cases": crit},
+        ]
+
         return {
             "total_cases": total,
             "risk_distribution": {"LOW": low, "MODERATE": mod, "HIGH": high, "CRITICAL": crit},
@@ -183,6 +210,9 @@ class DatabaseState:
             "cases_by_language": by_lang,
             "cases_by_channel": by_chan,
             "cases_by_state": by_state,
+            "referral_stats": referrals,
+            "followup_completion_rate": fol_rate,
+            "risk_trends": risk_trends,
             "pending_review_count": sum(1 for c in self.cases if c.status in ["Pending", "Under Review"]),
             "followups_today_count": sum(1 for f in self.followups if f.status == "Upcoming"),
             "early_warning_alerts": [

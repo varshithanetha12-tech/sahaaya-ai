@@ -193,14 +193,55 @@ class SVIEngineService:
         if not pathways:
             pathways = [SupportServiceType.COUNSELLING]
 
+        # Calculate explicit Stress Score and Trauma Indicator Score
+        speech_stress = (speech.hesitation_score * 0.4 + speech.voice_instability_index * 100 * 0.4 + min(100.0, speech.pause_count * 15.0) * 0.2) if speech else 25.0
+        emo_stress = (emotion.fear * 40.0 + emotion.anxiety * 30.0 + emotion.distress * 30.0)
+        nlp_stress = (nlp.fear_score * 0.5 + nlp.anxiety_score * 0.5)
+        calc_stress = (speech_stress * 0.35 + emo_stress * 0.35 + nlp_stress * 0.30) if speech else (emo_stress * 0.5 + nlp_stress * 0.5)
+        stress_score = int(round(max(5.0, min(100.0, calc_stress))))
+
+        calc_trauma = (
+            nlp.threat_intimidation_score * 0.40 +
+            nlp.social_isolation_score * 0.25 +
+            nlp.severe_distress_score * 0.20 +
+            nlp.emotional_shock_score * 0.15
+        )
+        trauma_score = int(round(max(5.0, min(100.0, calc_trauma))))
+
+        if critical_safety_alert or final_score >= 85:
+            stress_score = max(stress_score, 88)
+            trauma_score = max(trauma_score, 90)
+
+        # Emotional State Synthesis
+        if critical_safety_alert or risk_level == RiskLevel.CRITICAL:
+            emotional_state = "Acute Panic & Imminent Threat Dread"
+        elif risk_level == RiskLevel.HIGH:
+            emotional_state = "Severe Fear, Threat Trauma & Isolation"
+        elif risk_level == RiskLevel.MODERATE:
+            emotional_state = "Situational Anxiety & Prolonged Distress"
+        else:
+            emotional_state = "Calm & Informational"
+
+        # Risk-Specific Response Guidance
+        if risk_level == RiskLevel.LOW:
+            recommended_next_action = "Self-help guidance provided. Optional check-in available if distress increases."
+        elif risk_level == RiskLevel.MODERATE:
+            recommended_next_action = "Professional counselor consultation recommended. Supportive resources & follow-up scheduling."
+        elif risk_level == RiskLevel.HIGH:
+            recommended_next_action = "Immediate counselor referral initiated. Authorized officer notification dispatched for priority follow-up."
+        else:
+            recommended_next_action = "CRITICAL CRISIS ALERT: Emergency crisis guidance activated. Multi-agency protection referral dispatched."
+
         summary_text = (
-            f"SVI Score of {final_score}/100 categorized as {risk_level.value} risk. "
-            f"The interaction exhibits {len(factors)} active analytical indicators. "
-            f"Primary detected indicators: {', '.join([f.factor for f in factors[:3]])}. "
+            f"SVI Score of {final_score}/100 categorized as {risk_level.value} risk "
+            f"(Stress Score: {stress_score}/100, Trauma Score: {trauma_score}/100). "
+            f"Emotional state: {emotional_state}. "
             f"{'CRITICAL: Immediate escalation to authorized officer required.' if escalation_required else 'Authorized human review recommended for service allocation.'}"
         )
 
         breakdown = {
+            "Stress Score": float(stress_score),
+            "Trauma Indicator Score": float(trauma_score),
             "Distress Indicators": round(nlp.severe_distress_score, 1),
             "Fear Indicators": round(nlp.fear_score, 1),
             "Threat Indicators": round(nlp.threat_intimidation_score, 1),
@@ -213,6 +254,10 @@ class SVIEngineService:
         return SVIResult(
             score=final_score,
             risk_level=risk_level,
+            stress_score=stress_score,
+            trauma_score=trauma_score,
+            emotional_state=emotional_state,
+            recommended_next_action=recommended_next_action,
             confidence=round(confidence, 2),
             is_uncertain=is_uncertain,
             uncertainty_note=uncertainty_note,

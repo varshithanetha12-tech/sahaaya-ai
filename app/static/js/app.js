@@ -18,7 +18,15 @@ const App = {
         selectedChannel: "Voice Helpline",
         highContrast: false,
         fontSize: "font-size-md",
-        demoWalkthroughStep: 0
+        demoWalkthroughStep: 0,
+        convSessionId: null,
+        convTurnIndex: 1,
+        convLanguage: "Telugu",
+        activeVictimSubTab: "start-assessment",
+        latestAssessment: null,
+        filterPriority: "ALL",
+        filterReferral: "ALL",
+        isConvRecording: false
     },
 
     init: async function() {
@@ -150,6 +158,7 @@ const App = {
         }
 
         // Trigger view-specific loaders
+        if (tabId === "victim-view") this.switchVictimSubTab(this.state.activeVictimSubTab || "start-assessment");
         if (tabId === "officer-view") this.fetchCases();
         if (tabId === "followups-view") this.fetchFollowups();
         if (tabId === "resources-view") this.fetchResources();
@@ -183,6 +192,709 @@ const App = {
         } catch (e) {
             console.error("Role switch error:", e);
         }
+    },
+
+    // ==========================================
+    // VICTIM PORTAL SUB-TABS & CONVERSATIONAL ASSESSMENT
+    // ==========================================
+    switchVictimSubTab: function(tabName) {
+        this.state.activeVictimSubTab = tabName;
+
+        // Sub-nav buttons highlight
+        document.querySelectorAll(".vsub-btn").forEach(btn => {
+            btn.classList.remove("bg-teal-600", "text-white", "shadow-sm");
+            btn.classList.add("bg-slate-100", "text-slate-700", "hover:bg-slate-200");
+        });
+
+        const btnIdMap = {
+            "start-assessment": "vsub-start",
+            "voice-assessment": "vsub-voice",
+            "text-assessment": "vsub-text",
+            "my-assessment": "vsub-my-assessment",
+            "my-support": "vsub-my-support",
+            "my-followups": "vsub-followups",
+            "resources": "vsub-resources"
+        };
+        const activeBtn = document.getElementById(btnIdMap[tabName]);
+        if (activeBtn) {
+            activeBtn.classList.add("bg-teal-600", "text-white", "shadow-sm");
+            activeBtn.classList.remove("bg-slate-100", "text-slate-700", "hover:bg-slate-200");
+        }
+
+        // Section elements
+        const sections = [
+            "conversationalAssessmentSection",
+            "conversationalResultSection",
+            "victimSubmissionSection",
+            "victimDashboardSection",
+            "victimMySupportSection",
+            "victimFollowupsSection",
+            "victimResourcesSection"
+        ];
+        sections.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.classList.add("hidden");
+        });
+
+        if (tabName === "start-assessment") {
+            const conv = document.getElementById("conversationalAssessmentSection");
+            if (conv) conv.classList.remove("hidden");
+            if (!this.state.convSessionId) {
+                this.startConversationalAssessment();
+            }
+        } else if (tabName === "voice-assessment") {
+            const sub = document.getElementById("victimSubmissionSection");
+            if (sub) sub.classList.remove("hidden");
+            this.setChannel("Voice Helpline");
+        } else if (tabName === "text-assessment") {
+            const sub = document.getElementById("victimSubmissionSection");
+            if (sub) sub.classList.remove("hidden");
+            this.setChannel("Text Complaint");
+        } else if (tabName === "my-assessment") {
+            const resEl = document.getElementById("conversationalResultSection");
+            if (resEl) resEl.classList.remove("hidden");
+            if (!this.state.latestAssessment) {
+                const demoCase = this.state.cases.find(c => c.case_number === "NHAA-1024") || this.state.cases[0];
+                if (demoCase) {
+                    const mockAssessment = {
+                        score: demoCase.svi_score,
+                        risk_level: demoCase.risk_level,
+                        stress_score: demoCase.stress_score || 85,
+                        trauma_score: demoCase.trauma_score || 88,
+                        emotional_state: demoCase.emotional_state || "Severe Fear & Threat Trauma",
+                        recommended_next_action: demoCase.recommended_next_action,
+                        explainability_factors: demoCase.explainability || [],
+                        critical_safety_alert: demoCase.critical_safety_flag || demoCase.risk_level === "CRITICAL",
+                        case_number: demoCase.case_number
+                    };
+                    this.state.latestAssessment = mockAssessment;
+                    this.renderAssessmentResult(mockAssessment, demoCase.case_number);
+                }
+            } else {
+                this.renderAssessmentResult(this.state.latestAssessment, this.state.latestAssessment.case_number);
+            }
+        } else if (tabName === "my-support") {
+            const supEl = document.getElementById("victimMySupportSection");
+            if (supEl) supEl.classList.remove("hidden");
+        } else if (tabName === "my-followups") {
+            const folEl = document.getElementById("victimFollowupsSection");
+            if (folEl) folEl.classList.remove("hidden");
+        } else if (tabName === "resources") {
+            const recEl = document.getElementById("victimResourcesSection");
+            if (recEl) recEl.classList.remove("hidden");
+        }
+    },
+
+    setConvLanguage: function(lang) {
+        this.state.convLanguage = lang;
+        const sel = document.getElementById("convLanguageSelect");
+        if (sel) sel.value = lang;
+        if (this.state.convTurnIndex <= 1) {
+            this.startConversationalAssessment(lang);
+        }
+    },
+
+    startConversationalAssessment: async function(language, channel) {
+        const lang = language || this.state.convLanguage || "Telugu";
+        const ch = channel || "Voice Assessment";
+        this.state.convLanguage = lang;
+        this.state.convTurnIndex = 1;
+        this.state.convSessionId = null;
+
+        const sel = document.getElementById("convLanguageSelect");
+        if (sel) sel.value = lang;
+
+        const container = document.getElementById("convMessagesContainer");
+        if (container) {
+            container.innerHTML = `
+                <div class="flex items-center space-x-2 text-xs text-teal-700 italic py-2">
+                    <svg class="animate-spin h-4 w-4 text-teal-600" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+                    <span>Connecting to empathetic Sahaaya conversational triage agent...</span>
+                </div>
+            `;
+        }
+
+        try {
+            const res = await fetch(`/api/assessment/conversation/start?language=${encodeURIComponent(lang)}&channel=${encodeURIComponent(ch)}`, {
+                method: "POST"
+            });
+            if (!res.ok) {
+                throw new Error("Failed to start conversation");
+            }
+            const data = await res.json();
+            this.state.convSessionId = data.session_id;
+            this.state.convTurnIndex = data.turn_index;
+
+            const badge = document.getElementById("convSessionBadge");
+            if (badge) badge.textContent = `ID: ${data.session_id}`;
+
+            // Reset gauges
+            const turnNum = document.getElementById("convTurnNum");
+            if (turnNum) turnNum.textContent = "1";
+            const progPct = document.getElementById("convProgressPct");
+            if (progPct) progPct.textContent = "25";
+            const progFill = document.getElementById("convProgressBarFill");
+            if (progFill) progFill.style.width = "25%";
+
+            const stressEl = document.getElementById("convStressScore");
+            if (stressEl) stressEl.textContent = "0 / 100";
+            const stressBar = document.getElementById("convStressBar");
+            if (stressBar) stressBar.style.width = "0%";
+
+            const traumaEl = document.getElementById("convTraumaScore");
+            if (traumaEl) traumaEl.textContent = "0 / 100";
+            const traumaBar = document.getElementById("convTraumaBar");
+            if (traumaBar) traumaBar.style.width = "0%";
+
+            const riskBadge = document.getElementById("convRiskBadge");
+            if (riskBadge) {
+                riskBadge.className = "px-2.5 py-1 rounded-full text-xs font-black bg-emerald-100 text-emerald-800 border border-emerald-300";
+                riskBadge.textContent = "LOW";
+            }
+
+            const emoState = document.getElementById("convEmotionalState");
+            if (emoState) emoState.textContent = "Initial greeting • Active listening";
+
+            // Render greeting message
+            if (container) {
+                container.innerHTML = `
+                    <div class="flex items-start space-x-3">
+                        <div class="w-8 h-8 rounded-full bg-teal-700 text-white flex items-center justify-center font-bold text-xs shadow-sm flex-shrink-0">
+                            AI
+                        </div>
+                        <div class="bg-white border border-teal-200 text-slate-800 p-4 rounded-2xl rounded-tl-none shadow-sm max-w-xl text-xs leading-relaxed">
+                            <div class="text-[10px] font-bold text-teal-700 mb-1 uppercase tracking-wider">Sahaaya Empathetic Agent (${lang})</div>
+                            <div class="font-medium text-slate-800">${data.ai_response}</div>
+                            <div class="text-[10px] text-slate-400 mt-2 flex items-center justify-between">
+                                <span>Voice & text prosody analysis active</span>
+                                <span>Just now</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            const input = document.getElementById("convUserInput");
+            if (input) input.value = "";
+        } catch (e) {
+            console.error("Conversation start error:", e);
+            if (container) {
+                container.innerHTML = `<div class="p-3 text-xs text-rose-600">Failed to initiate conversation. Please try again.</div>`;
+            }
+        }
+    },
+
+    toggleConvVoice: function() {
+        this.state.isConvRecording = !this.state.isConvRecording;
+        const btn = document.getElementById("convVoiceToggleBtn");
+        const btnText = document.getElementById("convVoiceBtnText");
+        const indicator = document.getElementById("convAudioIndicator");
+
+        if (this.state.isConvRecording) {
+            if (btn) {
+                btn.classList.add("bg-rose-600", "text-white");
+                btn.classList.remove("bg-slate-100", "text-slate-700");
+            }
+            if (btnText) btnText.innerHTML = `<span class="inline-block w-2.5 h-2.5 bg-white rounded-full mr-1.5 animate-ping"></span> Stop Recording (Listening...)`;
+            if (indicator) indicator.classList.remove("hidden");
+            this.showToast("Voice stream active. Acoustic pitch, tremor and hesitation markers tracking enabled.", "info");
+
+            const input = document.getElementById("convUserInput");
+            if (input && !input.value.trim()) {
+                input.value = "నమస్కారం... మా గ్రామంలో మా కుటుంబంపై నిరంతరం బెదిరింపులు వస్తున్నాయి. రాత్రిపూట ఇంటికి వచ్చి చంపేస్తామని భయపెడుతున్నారు... తాగడానికి నీళ్లు కూడా బంద్ చేశారు... చాలా భయంగా ఉంది...";
+            }
+        } else {
+            if (btn) {
+                btn.classList.remove("bg-rose-600", "text-white");
+                btn.classList.add("bg-slate-100", "text-slate-700");
+            }
+            if (btnText) btnText.innerHTML = `🎙️ Record / Simulate Voice`;
+            if (indicator) indicator.classList.add("hidden");
+
+            const input = document.getElementById("convUserInput");
+            if (input && input.value.trim()) {
+                this.sendConversationMessage(input.value.trim(), true, 26.5);
+            }
+        }
+    },
+
+    sendConversationMessage: async function(overrideText, isAudio = false, duration = 0.0) {
+        const inputEl = document.getElementById("convUserInput");
+        const messageText = (overrideText !== undefined && overrideText !== null) ? overrideText : (inputEl ? inputEl.value.trim() : "");
+
+        if (!messageText) {
+            this.showToast("Please write or speak a description of your experience.", "warning");
+            return;
+        }
+
+        if (!this.state.convSessionId) {
+            await this.startConversationalAssessment();
+        }
+
+        const container = document.getElementById("convMessagesContainer");
+
+        // Append user chat bubble
+        if (container) {
+            const userBubble = document.createElement("div");
+            userBubble.className = "flex items-start justify-end space-x-3";
+            userBubble.innerHTML = `
+                <div class="bg-teal-700 text-white p-4 rounded-2xl rounded-tr-none shadow-sm max-w-xl text-xs leading-relaxed">
+                    <div class="text-[10px] font-bold text-teal-200 mb-1 uppercase tracking-wider flex items-center justify-between">
+                        <span>You (${this.state.convLanguage})</span>
+                        ${isAudio ? `<span class="bg-teal-800 text-teal-100 px-1.5 py-0.5 rounded font-mono">🎙️ Spoken Audio (${duration || 26.5}s)</span>` : ''}
+                    </div>
+                    <div>${messageText}</div>
+                    <div class="text-[10px] text-teal-300 mt-2 text-right">Delivered</div>
+                </div>
+                <div class="w-8 h-8 rounded-full bg-slate-800 text-white flex items-center justify-center font-bold text-xs shadow-sm flex-shrink-0">
+                    You
+                </div>
+            `;
+            container.appendChild(userBubble);
+
+            // Typing indicator
+            const typingInd = document.createElement("div");
+            typingInd.id = "convTypingIndicator";
+            typingInd.className = "flex items-center space-x-2 text-xs text-teal-700 italic py-2";
+            typingInd.innerHTML = `
+                <svg class="animate-spin h-4 w-4 text-teal-600" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+                <span>Evaluating multi-prosodic tremor, linguistic trauma & SVI markers...</span>
+            `;
+            container.appendChild(typingInd);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        if (inputEl) inputEl.value = "";
+
+        // Reset voice button state if it was recording
+        if (this.state.isConvRecording) {
+            this.state.isConvRecording = false;
+            const btn = document.getElementById("convVoiceToggleBtn");
+            const btnText = document.getElementById("convVoiceBtnText");
+            const indicator = document.getElementById("convAudioIndicator");
+            if (btn) {
+                btn.classList.remove("bg-rose-600", "text-white");
+                btn.classList.add("bg-slate-100", "text-slate-700");
+            }
+            if (btnText) btnText.innerHTML = `🎙️ Record / Simulate Voice`;
+            if (indicator) indicator.classList.add("hidden");
+        }
+
+        try {
+            const payload = {
+                session_id: this.state.convSessionId,
+                turn_index: this.state.convTurnIndex,
+                user_message: messageText,
+                language: this.state.convLanguage,
+                channel: isAudio ? "Voice Assessment" : "Chatbot",
+                audio_present: !!isAudio,
+                audio_duration_sec: duration || (isAudio ? 26.5 : 0.0)
+            };
+
+            const res = await fetch("/api/assessment/conversation/turn", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+
+            const typingInd = document.getElementById("convTypingIndicator");
+            if (typingInd) typingInd.remove();
+
+            if (!res.ok) {
+                const err = await res.json();
+                this.showToast(err.detail || "Error evaluating turn", "error");
+                return;
+            }
+
+            const data = await res.json();
+
+            // Append AI response bubble
+            if (container) {
+                const aiBubble = document.createElement("div");
+                aiBubble.className = "flex items-start space-x-3";
+                aiBubble.innerHTML = `
+                    <div class="w-8 h-8 rounded-full bg-teal-700 text-white flex items-center justify-center font-bold text-xs shadow-sm flex-shrink-0">
+                        AI
+                    </div>
+                    <div class="bg-white border border-teal-200 text-slate-800 p-4 rounded-2xl rounded-tl-none shadow-sm max-w-xl text-xs leading-relaxed">
+                        <div class="text-[10px] font-bold text-teal-700 mb-1 uppercase tracking-wider flex items-center justify-between">
+                            <span>Sahaaya Empathetic Agent</span>
+                            <span class="font-mono text-slate-400">Turn ${data.turn_index - 1} / 4</span>
+                        </div>
+                        <div class="font-medium text-slate-800">${data.ai_response}</div>
+                        ${data.detected_indicators && data.detected_indicators.length > 0 ? `
+                            <div class="mt-2.5 pt-2 border-t border-slate-100 flex flex-wrap items-center gap-1">
+                                <span class="text-[10px] text-slate-400 mr-1">Observed Signals:</span>
+                                ${data.detected_indicators.map(ind => `<span class="bg-slate-100 text-slate-700 text-[10px] font-medium px-2 py-0.5 rounded-full border border-slate-200">✓ ${ind}</span>`).join('')}
+                            </div>
+                        ` : ''}
+                        ${data.is_complete ? `
+                            <div class="mt-3 pt-2.5 border-t border-teal-100 flex items-center justify-between">
+                                <span class="text-[11px] font-bold text-teal-800">✅ Assessment Synthesis Ready</span>
+                                <button onclick="App.viewCompletedAssessment()" class="px-3.5 py-1.5 rounded-xl bg-teal-700 hover:bg-teal-800 text-white text-xs font-bold transition shadow">
+                                    View Full Results →
+                                </button>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+                container.appendChild(aiBubble);
+                container.scrollTop = container.scrollHeight;
+            }
+
+            // Update live progress and gauges
+            this.state.convTurnIndex = data.turn_index;
+
+            const turnNum = document.getElementById("convTurnNum");
+            if (turnNum) turnNum.textContent = Math.min(4, data.turn_index);
+            const progPct = document.getElementById("convProgressPct");
+            if (progPct) progPct.textContent = data.progress_pct;
+            const progFill = document.getElementById("convProgressBarFill");
+            if (progFill) progFill.style.width = `${data.progress_pct}%`;
+
+            const stressEl = document.getElementById("convStressScore");
+            if (stressEl) stressEl.textContent = `${data.current_stress_score} / 100`;
+            const stressBar = document.getElementById("convStressBar");
+            if (stressBar) stressBar.style.width = `${data.current_stress_score}%`;
+
+            const traumaEl = document.getElementById("convTraumaScore");
+            if (traumaEl) traumaEl.textContent = `${data.current_trauma_score} / 100`;
+            const traumaBar = document.getElementById("convTraumaBar");
+            if (traumaBar) traumaBar.style.width = `${data.current_trauma_score}%`;
+
+            const riskBadge = document.getElementById("convRiskBadge");
+            if (riskBadge) {
+                const colors = {
+                    "LOW": "bg-emerald-100 text-emerald-800 border-emerald-300",
+                    "MODERATE": "bg-amber-100 text-amber-800 border-amber-300",
+                    "HIGH": "bg-orange-100 text-orange-800 border-orange-300",
+                    "CRITICAL": "bg-rose-100 text-rose-800 border-rose-300 animate-pulse"
+                };
+                riskBadge.className = `px-2.5 py-1 rounded-full text-xs font-black border ${colors[data.current_risk_level] || colors["LOW"]}`;
+                riskBadge.textContent = data.current_risk_level;
+            }
+
+            const emoState = document.getElementById("convEmotionalState");
+            if (emoState) emoState.textContent = data.emotional_state || "Heightened affective arousal";
+
+            // Update Emotion Pills
+            const emotionPills = document.getElementById("convEmotionPills");
+            if (emotionPills && data.detected_emotions) {
+                const emo = data.detected_emotions;
+                emotionPills.innerHTML = `
+                    <span class="px-2 py-0.5 rounded-full text-[11px] font-bold ${emo.Fear > 40 ? 'bg-rose-100 text-rose-800 border border-rose-300' : 'bg-slate-100 text-slate-600'}">Fear (${Math.round(emo.Fear || 0)}%)</span>
+                    <span class="px-2 py-0.5 rounded-full text-[11px] font-bold ${emo.Anxiety > 40 ? 'bg-amber-100 text-amber-800 border border-amber-300' : 'bg-slate-100 text-slate-600'}">Anxiety (${Math.round(emo.Anxiety || 0)}%)</span>
+                    <span class="px-2 py-0.5 rounded-full text-[11px] font-bold ${emo.Distress > 40 ? 'bg-purple-100 text-purple-800 border border-purple-300' : 'bg-slate-100 text-slate-600'}">Distress (${Math.round(emo.Distress || 0)}%)</span>
+                    <span class="px-2 py-0.5 rounded-full text-[11px] font-medium bg-slate-100 text-slate-600">Sadness (${Math.round(emo.Sadness || 0)}%)</span>
+                    <span class="px-2 py-0.5 rounded-full text-[11px] font-medium bg-slate-100 text-slate-600">Anger (${Math.round(emo.Anger || 0)}%)</span>
+                    <span class="px-2 py-0.5 rounded-full text-[11px] font-medium ${emo.Calm > 40 ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-600'}">Calm (${Math.round(emo.Calm || 0)}%)</span>
+                `;
+            }
+
+            // If completed, record assessment and show results
+            if (data.is_complete && data.final_assessment) {
+                this.state.latestAssessment = data.final_assessment;
+                if (data.case_number) {
+                    this.state.latestAssessment.case_number = data.case_number;
+                }
+                this.renderAssessmentResult(data.final_assessment, data.case_number || "NHAA-1024");
+                this.showToast("Assessment complete! Detailed triage synthesis generated.", "success");
+                
+                // Refresh cases in background
+                this.fetchCases();
+
+                setTimeout(() => {
+                    this.viewCompletedAssessment();
+                }, 1200);
+            }
+        } catch (e) {
+            console.error("Conversation turn error:", e);
+            const typingInd = document.getElementById("convTypingIndicator");
+            if (typingInd) typingInd.remove();
+            this.showToast("Failed to process conversational turn.", "error");
+        }
+    },
+
+    viewCompletedAssessment: function() {
+        if (!this.state.latestAssessment) return;
+        this.switchVictimSubTab("my-assessment");
+    },
+
+    loadTeluguVoiceDemo: async function() {
+        const teluguScenario = "నమస్కారం... మా గ్రామంలో మా కుటుంబంపై నిరంతరం బెదిరింపులు వస్తున్నాయి. భూమి పట్టా రిజిస్ట్రేషన్ తర్వాత ఊరి పెద్దలు మమ్మల్ని చంపేస్తామని రాత్రిపూట ఇంటికి వచ్చి భయపెడుతున్నారు... తాగడానికి నీళ్లు కూడా బంద్ చేశారు. మా పిల్లలు చాలా భయపడుతున్నారు... ఏం చేయాలో దిక్కులేదు...";
+        this.state.convLanguage = "Telugu";
+        const sel = document.getElementById("convLanguageSelect");
+        if (sel) sel.value = "Telugu";
+
+        this.showToast("Loading authentic Telugu land threat scenario with simulated speech prosody...", "info");
+
+        if (!this.state.convSessionId || this.state.convTurnIndex > 1) {
+            await this.startConversationalAssessment("Telugu", "Voice Assessment");
+        }
+
+        const input = document.getElementById("convUserInput");
+        if (input) input.value = teluguScenario;
+
+        setTimeout(() => {
+            this.sendConversationMessage(teluguScenario, true, 28.5);
+        }, 600);
+    },
+
+    getLatestCaseNum: function() {
+        return (this.state.latestAssessment && this.state.latestAssessment.case_number) || (this.state.selectedCase && this.state.selectedCase.case_number) || "NHAA-1024";
+    },
+
+    renderAssessmentResult: function(assessment, caseNumber) {
+        const caseNum = caseNumber || (assessment && assessment.case_number) || "NHAA-1024";
+        const resCaseEl = document.getElementById("resCaseNumber");
+        if (resCaseEl) resCaseEl.textContent = caseNum;
+
+        // Badge styling
+        const resBadge = document.getElementById("resRiskBadge");
+        if (resBadge) {
+            const lvl = assessment.risk_level || "HIGH";
+            const colors = {
+                "LOW": "bg-emerald-100 text-emerald-800 border-emerald-300",
+                "MODERATE": "bg-amber-100 text-amber-800 border-amber-300",
+                "HIGH": "bg-orange-100 text-orange-800 border-orange-300",
+                "CRITICAL": "bg-rose-100 text-rose-800 border-rose-300 animate-pulse"
+            };
+            resBadge.className = `px-4 py-1.5 rounded-full text-xs font-black border ${colors[lvl] || colors["HIGH"]}`;
+            resBadge.textContent = `${lvl} RISK`;
+        }
+
+        // Scores
+        const stressEl = document.getElementById("resStressScore");
+        if (stressEl) stressEl.textContent = `${assessment.stress_score || 85} / 100`;
+
+        const traumaEl = document.getElementById("resTraumaScore");
+        if (traumaEl) traumaEl.textContent = `${assessment.trauma_score || 88} / 100`;
+
+        const sviEl = document.getElementById("resSviScore");
+        if (sviEl) sviEl.textContent = `${assessment.score || 82} / 100`;
+
+        const prioEl = document.getElementById("resPriority");
+        if (prioEl) prioEl.textContent = assessment.critical_safety_alert ? "Urgent" : (assessment.risk_level === "HIGH" ? "Priority" : "Standard");
+
+        // Emotional State
+        const emoEl = document.getElementById("resEmotionalState");
+        if (emoEl) emoEl.textContent = assessment.emotional_state || assessment.summary_text || "Heightened autonomic fear arousal with active intimidation trauma.";
+
+        // Explainability factors
+        const expList = document.getElementById("resExplainabilityList");
+        if (expList && assessment.explainability_factors) {
+            expList.innerHTML = assessment.explainability_factors.map(f => `
+                <div class="p-3 bg-slate-50 rounded-xl border border-slate-200 text-xs">
+                    <div class="flex items-center justify-between font-bold text-slate-800">
+                        <span class="flex items-center space-x-1.5">
+                            <span class="w-2 h-2 rounded-full ${f.indicator_group === 'Safety' ? 'bg-rose-500' : 'bg-teal-500'}"></span>
+                            <span>${f.factor}</span>
+                        </span>
+                        <span class="text-teal-700 bg-teal-50 px-2 py-0.5 rounded text-[11px] font-mono">${f.weight}% Weight</span>
+                    </div>
+                    <div class="text-slate-600 mt-1">${f.description}</div>
+                    ${f.evidence_snippet ? `<div class="mt-1.5 text-[11px] font-mono text-slate-600 bg-white p-1.5 rounded border border-slate-100">Evidence: "${f.evidence_snippet}"</div>` : ''}
+                </div>
+            `).join("");
+        }
+
+        // Recommended Next Action
+        const actionEl = document.getElementById("resRecommendedAction");
+        if (actionEl) actionEl.textContent = assessment.recommended_next_action || "Urgent human review flagged. Immediate counselor referral via Tele-MANAS (14416) and District Legal Services Authority (DLSA) defense notice advised.";
+
+        // Feedback alert
+        const fbEl = document.getElementById("resReferralFeedback");
+        if (fbEl) fbEl.classList.add("hidden");
+    },
+
+    requestAssessmentReferral: function(referralType) {
+        const caseNum = this.getLatestCaseNum();
+        this.requestReferral(caseNum, referralType);
+        const fbEl = document.getElementById("resReferralFeedback");
+        const fbText = document.getElementById("resReferralFeedbackText");
+        if (fbEl && fbText) {
+            fbEl.classList.remove("hidden");
+            fbText.textContent = `Immediate referral for [${referralType}] requested and forwarded to authorized nodal personnel for Case ${caseNum}.`;
+        }
+    },
+
+    requestReferral: async function(caseNumber, referralType) {
+        if (!caseNumber) {
+            caseNumber = this.getLatestCaseNum();
+        }
+
+        try {
+            const assigneeMap = {
+                "Counselor": "Dr. S. Rao (Tele-MANAS Counselor)",
+                "Legal Aid": "Adv. K. Murthy (DLSA Defense Counsel)",
+                "Emergency": "District Atrocity Quick Response Unit",
+                "Self-Help": "Community Welfare Coordinator"
+            };
+
+            const res = await fetch(`/api/cases/${caseNumber}/referral`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    case_number: caseNumber,
+                    referral_type: referralType,
+                    assignee_name: assigneeMap[referralType] || "Assigned Nodal Specialist",
+                    notes: `Institutional referral initiated via Sahaaya Triage Platform`
+                })
+            });
+
+            if (!res.ok) {
+                throw new Error("Referral request failed");
+            }
+
+            const data = await res.json();
+            this.showToast(`Referral [${referralType}] requested successfully for Case ${caseNumber}!`, "success");
+
+            if (this.state.selectedCase && this.state.selectedCase.case_number === caseNumber) {
+                this.state.selectedCase.referral_status = data.referral_status;
+                const badge = document.getElementById("cdReferralStatusBadge");
+                if (badge) badge.textContent = data.referral_status;
+            }
+
+            await this.fetchCases();
+        } catch (e) {
+            console.error("Referral request error:", e);
+            this.showToast(`Failed to dispatch referral request for ${referralType}.`, "error");
+        }
+    },
+
+    acknowledgeAlert: async function(caseNumber) {
+        try {
+            const res = await fetch(`/api/cases/${caseNumber}/alert/acknowledge`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    case_number: caseNumber,
+                    acknowledged_by: this.state.currentUser ? this.state.currentUser.name : "Officer Rajesh Kumar",
+                    notes: "High-risk alert verified and prioritized for triage escalation."
+                })
+            });
+
+            if (!res.ok) {
+                throw new Error("Alert acknowledgement failed");
+            }
+
+            const data = await res.json();
+            this.showToast(`Case ${caseNumber} alert acknowledged by ${data.assigned_officer}.`, "success");
+
+            await this.fetchCases();
+            if (this.state.selectedCase && this.state.selectedCase.case_number === caseNumber) {
+                await this.viewCaseDetails(caseNumber);
+            }
+        } catch (e) {
+            console.error("Acknowledge alert error:", e);
+            this.showToast("Failed to acknowledge alert.", "error");
+        }
+    },
+
+    recordSupportOutcome: async function(caseNumber, received, notes) {
+        try {
+            const res = await fetch(`/api/cases/${caseNumber}/support-outcome`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    case_number: caseNumber,
+                    support_received: !!received,
+                    outcome_notes: notes || "Support verification completed.",
+                    recorded_by: this.state.currentUser ? this.state.currentUser.name : "Officer Rajesh Kumar"
+                })
+            });
+
+            if (!res.ok) {
+                throw new Error("Support outcome recording failed");
+            }
+
+            const data = await res.json();
+            this.showToast(`Support outcome recorded for ${caseNumber}. Case status: ${data.case_status}`, "success");
+
+            await this.fetchCases();
+            if (this.state.selectedCase && this.state.selectedCase.case_number === caseNumber) {
+                await this.viewCaseDetails(caseNumber);
+            }
+        } catch (e) {
+            console.error("Support outcome error:", e);
+            this.showToast("Failed to record support outcome.", "error");
+        }
+    },
+
+    submitSupportOutcome: function() {
+        if (!this.state.selectedCase) {
+            this.showToast("No active case selected.", "warning");
+            return;
+        }
+        const received = document.getElementById("cdSupportReceivedInput") ? document.getElementById("cdSupportReceivedInput").checked : false;
+        const notes = document.getElementById("cdOutcomeNotesInput") ? document.getElementById("cdOutcomeNotesInput").value.trim() : "";
+        this.recordSupportOutcome(this.state.selectedCase.case_number, received, notes);
+    },
+
+    renderHighRiskAlertBanner: function() {
+        const countEl = document.getElementById("highRiskAlertCount");
+        const container = document.getElementById("officerAlertCardsContainer");
+        if (!container) return;
+
+        const alerts = this.state.cases.filter(c =>
+            c.alert_status === "High-Risk Alert" ||
+            c.risk_level === "CRITICAL" ||
+            (c.risk_level === "HIGH" && c.alert_status !== "Acknowledged")
+        );
+
+        if (countEl) countEl.textContent = alerts.length;
+
+        if (alerts.length === 0) {
+            container.innerHTML = `
+                <div class="col-span-full p-4 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-900 text-xs font-semibold flex items-center space-x-2">
+                    <span class="w-2.5 h-2.5 bg-emerald-500 rounded-full"></span>
+                    <span>All high-risk and critical safety alerts have been reviewed and acknowledged by authorized officers.</span>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = alerts.map(c => `
+            <div class="p-3.5 bg-white border border-rose-200 rounded-xl shadow-sm flex flex-col justify-between hover:border-rose-400 transition">
+                <div>
+                    <div class="flex items-center justify-between pb-2 border-b border-rose-100">
+                        <span class="font-mono font-bold text-xs text-rose-900 flex items-center space-x-1">
+                            <span class="w-2 h-2 rounded-full bg-rose-600 animate-ping"></span>
+                            <span>${c.case_number}</span>
+                        </span>
+                        <span class="px-2 py-0.5 rounded text-[10px] font-black ${c.risk_level === 'CRITICAL' ? 'bg-rose-600 text-white' : 'bg-orange-500 text-white'}">
+                            ${c.risk_level}
+                        </span>
+                    </div>
+
+                    <div class="mt-2 text-xs text-slate-700">
+                        <div class="font-semibold text-slate-900">${c.complainant_alias || 'Complainant'} • ${c.language}</div>
+                        <div class="text-[11px] text-slate-500 mt-0.5">SVI: <strong class="text-rose-700">${c.svi_score}/100</strong> (Stress: ${c.stress_score || c.svi_score}, Trauma: ${c.trauma_score || c.svi_score})</div>
+                        <div class="text-[11px] text-slate-600 mt-1 line-clamp-2">
+                            <strong>Action:</strong> ${c.recommended_next_action || 'Urgent human review required.'}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between gap-2">
+                    <span class="text-[10px] font-bold ${c.referral_status && c.referral_status !== 'None' ? 'text-teal-700 bg-teal-50' : 'text-amber-700 bg-amber-50'} px-2 py-0.5 rounded">
+                        ${c.referral_status || 'No Referral'}
+                    </span>
+                    <div class="flex items-center space-x-1.5">
+                        ${c.alert_status !== 'Acknowledged' ? `
+                            <button onclick="App.acknowledgeAlert('${c.case_number}')" class="px-2.5 py-1 rounded bg-rose-600 hover:bg-rose-700 text-white text-[11px] font-bold transition shadow-sm">
+                                Acknowledge
+                            </button>
+                        ` : `
+                            <span class="text-[11px] text-slate-400 font-medium">✓ Acknowledged</span>
+                        `}
+                        <button onclick="App.viewCaseDetails('${c.case_number}')" class="px-2.5 py-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-800 text-[11px] font-bold transition">
+                            Review
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `).join("");
     },
 
     // ==========================================
@@ -513,16 +1225,41 @@ const App = {
         const lang = document.getElementById("filterLanguage") ? document.getElementById("filterLanguage").value : "ALL";
         const channel = document.getElementById("filterChannel") ? document.getElementById("filterChannel").value : "ALL";
         const status = document.getElementById("filterStatus") ? document.getElementById("filterStatus").value : "ALL";
+        const priority = document.getElementById("filterPriority") ? document.getElementById("filterPriority").value : "ALL";
+        const referral = document.getElementById("filterReferral") ? document.getElementById("filterReferral").value : "ALL";
         const search = document.getElementById("searchCasesInput") ? document.getElementById("searchCasesInput").value : "";
+
+        this.state.filterPriority = priority;
+        this.state.filterReferral = referral;
 
         try {
             const q = new URLSearchParams({
                 risk, language: lang, channel, status, search
             });
             const res = await fetch(`/api/cases?${q.toString()}`);
-            this.state.cases = await res.json();
+            let cases = await res.json();
+
+            // Client-side filter for Priority
+            if (priority && priority !== "ALL") {
+                cases = cases.filter(c => (c.priority || "Standard").toUpperCase() === priority.toUpperCase());
+            }
+
+            // Client-side filter for Referral Status
+            if (referral && referral !== "ALL") {
+                if (referral === "None") {
+                    cases = cases.filter(c => !c.referral_status || c.referral_status === "None");
+                } else {
+                    cases = cases.filter(c => (c.referral_status || "").toLowerCase().includes(referral.toLowerCase()));
+                }
+            }
+
+            this.state.cases = cases;
             this.renderCasesTable();
             this.updateOfficerKpis();
+            this.renderHighRiskAlertBanner();
+
+            const countEl = document.getElementById("casesCountDisplay");
+            if (countEl) countEl.textContent = `${cases.length}`;
         } catch (e) {
             console.error("Failed to load cases:", e);
         }
@@ -545,7 +1282,7 @@ const App = {
         if (!tbody) return;
 
         if (this.state.cases.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="8" class="text-center py-8 text-sm text-slate-500">No cases match the specified triage filters.</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="12" class="text-center py-8 text-sm text-slate-500">No cases match the specified triage filters.</td></tr>`;
             return;
         }
 
@@ -556,28 +1293,44 @@ const App = {
             return `<span class="px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">🟢 LOW</span>`;
         };
 
-        const statusBadge = (s) => {
-            if (s === "Resolved") return `<span class="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded text-xs">Resolved</span>`;
-            if (s === "Assigned") return `<span class="text-blue-700 bg-blue-50 px-2 py-0.5 rounded text-xs">Assigned</span>`;
-            if (s === "Under Review") return `<span class="text-amber-700 bg-amber-50 px-2 py-0.5 rounded text-xs">Under Review</span>`;
-            return `<span class="text-slate-600 bg-slate-100 px-2 py-0.5 rounded text-xs">Pending</span>`;
+        const priorityBadge = (p) => {
+            if (p === "Urgent") return `<span class="px-2 py-0.5 rounded text-[10px] font-black bg-rose-100 text-rose-800 border border-rose-300">🚨 Urgent</span>`;
+            if (p === "Priority") return `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300">⚡ Priority</span>`;
+            return `<span class="px-2 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-700">Standard</span>`;
+        };
+
+        const alertBadge = (a) => {
+            if (a === "High-Risk Alert") return `<span class="px-2 py-0.5 rounded text-[10px] font-black bg-rose-600 text-white animate-pulse">ALERT</span>`;
+            if (a === "Acknowledged") return `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800">Ack'd</span>`;
+            return `<span class="px-2 py-0.5 rounded text-[10px] font-medium bg-slate-100 text-slate-500">Normal</span>`;
+        };
+
+        const referralBadge = (r) => {
+            if (r && r !== "None") return `<span class="px-2 py-0.5 rounded text-[11px] font-bold bg-teal-100 text-teal-800 whitespace-nowrap">${r}</span>`;
+            return `<span class="px-2 py-0.5 rounded text-[11px] text-slate-400">None</span>`;
         };
 
         tbody.innerHTML = this.state.cases.map(c => `
             <tr class="hover:bg-slate-50 transition border-b border-slate-100">
-                <td class="py-3 px-4 text-xs font-mono font-bold text-teal-800">
+                <td class="py-3 px-3 text-xs font-mono font-bold text-teal-800 whitespace-nowrap">
                     ${c.case_number}
-                    ${c.critical_safety_flag ? `<span class="ml-1 text-[10px] bg-rose-600 text-white px-1 rounded">EMERGENCY</span>` : ''}
+                    ${c.critical_safety_flag ? `<span class="ml-1 text-[9px] bg-rose-600 text-white px-1 py-0.5 rounded font-sans">SOS</span>` : ''}
                 </td>
-                <td class="py-3 px-4 text-xs text-slate-600">${c.created_at}</td>
-                <td class="py-3 px-4 text-xs text-slate-700 font-medium">${c.language}</td>
-                <td class="py-3 px-4 text-xs text-slate-600">${c.channel}</td>
-                <td class="py-3 px-4 text-xs font-bold ${c.svi_score >= 66 ? 'text-rose-700' : 'text-slate-800'}">
+                <td class="py-3 px-3 text-xs text-slate-600 whitespace-nowrap">${c.created_at}</td>
+                <td class="py-3 px-3 text-xs text-slate-700 font-medium whitespace-nowrap">${c.complainant_alias || 'Complainant'}</td>
+                <td class="py-3 px-3 text-xs text-slate-700 font-medium whitespace-nowrap">${c.language}</td>
+                <td class="py-3 px-3 text-xs text-slate-600 whitespace-nowrap">${c.channel}</td>
+                <td class="py-3 px-3 text-xs font-bold ${c.svi_score >= 66 ? 'text-rose-700' : 'text-slate-800'} whitespace-nowrap">
                     ${c.svi_score} / 100
                 </td>
-                <td class="py-3 px-4 text-xs">${riskBadge(c.risk_level)}</td>
-                <td class="py-3 px-4 text-xs">${statusBadge(c.status)}</td>
-                <td class="py-3 px-4 text-xs">
+                <td class="py-3 px-3 text-xs font-mono font-semibold text-slate-700 whitespace-nowrap">
+                    <span class="text-rose-700">${c.stress_score || c.svi_score}</span> / <span class="text-purple-700">${c.trauma_score || c.svi_score}</span>
+                </td>
+                <td class="py-3 px-3 text-xs whitespace-nowrap">${riskBadge(c.risk_level)}</td>
+                <td class="py-3 px-3 text-xs whitespace-nowrap">${priorityBadge(c.priority)}</td>
+                <td class="py-3 px-3 text-xs whitespace-nowrap">${alertBadge(c.alert_status)}</td>
+                <td class="py-3 px-3 text-xs">${referralBadge(c.referral_status)}</td>
+                <td class="py-3 px-3 text-xs whitespace-nowrap">
                     <button onclick="App.viewCaseDetails('${c.case_number}')" class="px-2.5 py-1 rounded bg-teal-600 hover:bg-teal-700 text-white font-medium text-xs transition">
                         Review Dossier
                     </button>
@@ -612,6 +1365,60 @@ const App = {
         document.getElementById("cdDistrict").textContent = `${c.district}, ${c.state}`;
         document.getElementById("cdComplainantAlias").textContent = c.complainant_alias;
         document.getElementById("cdSviScore").textContent = `${c.svi_score} / 100`;
+
+        // Stress / Trauma Scores
+        const stressEl = document.getElementById("cdStressScore");
+        if (stressEl) stressEl.textContent = `${c.stress_score || c.svi_score} / 100`;
+
+        const traumaEl = document.getElementById("cdTraumaScore");
+        if (traumaEl) traumaEl.textContent = `${c.trauma_score || c.svi_score} / 100`;
+
+        // Emotional State
+        const emoEl = document.getElementById("cdEmotionalState");
+        if (emoEl) emoEl.textContent = c.emotional_state || "Severe Fear & Threat Trauma";
+
+        // Recommended Next Action
+        const actionEl = document.getElementById("cdRecommendedNextAction");
+        if (actionEl) actionEl.textContent = c.recommended_next_action || "Immediate authorized review advised.";
+
+        // Priority Badge
+        const prioBadge = document.getElementById("cdPriorityBadge");
+        if (prioBadge) {
+            prioBadge.textContent = c.priority || "Standard";
+            prioBadge.className = `px-2 py-0.5 rounded text-xs font-bold ${
+                c.priority === 'Urgent' ? 'bg-rose-100 text-rose-800 border border-rose-300' :
+                c.priority === 'Priority' ? 'bg-amber-100 text-amber-800 border border-amber-300' :
+                'bg-slate-100 text-slate-700'
+            }`;
+        }
+
+        // Alert Status Badge
+        const alertBadge = document.getElementById("cdAlertStatusBadge");
+        if (alertBadge) {
+            alertBadge.textContent = c.alert_status || "Normal";
+            alertBadge.className = `px-2 py-0.5 rounded text-xs font-bold ${
+                c.alert_status === 'High-Risk Alert' ? 'bg-rose-600 text-white animate-pulse' :
+                c.alert_status === 'Acknowledged' ? 'bg-blue-100 text-blue-800' :
+                'bg-slate-100 text-slate-700'
+            }`;
+        }
+
+        // Referral Status Badge
+        const refBadge = document.getElementById("cdReferralStatusBadge");
+        if (refBadge) {
+            refBadge.textContent = c.referral_status || "None";
+            refBadge.className = `px-2 py-0.5 rounded text-xs font-bold ${
+                c.referral_status && c.referral_status !== 'None' ? 'bg-teal-100 text-teal-800 border border-teal-300' :
+                'bg-slate-100 text-slate-700'
+            }`;
+        }
+
+        // Support Outcome Form values
+        const supportRecInput = document.getElementById("cdSupportReceivedInput");
+        if (supportRecInput) supportRecInput.checked = !!c.support_received;
+
+        const outcomeNotesInput = document.getElementById("cdOutcomeNotesInput");
+        if (outcomeNotesInput) outcomeNotesInput.value = c.support_outcome_notes || "";
 
         const riskBadge = document.getElementById("cdRiskBadge");
         if (riskBadge) {
