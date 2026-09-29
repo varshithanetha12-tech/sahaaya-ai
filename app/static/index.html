@@ -28,6 +28,19 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- Custom Stylesheet -->
     <link rel="stylesheet" href="/static/css/custom.css">
+    <!-- Configurable API Base for Production & Multi-Domain Deployments -->
+    <script>
+        window.__API_BASE__ = window.__API_BASE__ || "";
+        if (window.__API_BASE__) {
+            const _origFetch = window.fetch;
+            window.fetch = function(input, init) {
+                if (typeof input === 'string' && input.startsWith('/api/')) {
+                    input = window.__API_BASE__.replace(/\/+$/, '') + input;
+                }
+                return _origFetch(input, init);
+            };
+        }
+    </script>
     <script>
         tailwind.config = {
             theme: {

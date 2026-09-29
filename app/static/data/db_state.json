@@ -18,14 +18,14 @@
       "recommended_next_action": "Immediate counselor referral initiated. Authorized officer notification dispatched for priority follow-up.",
       "risk_level": "HIGH",
       "priority": "Priority",
-      "alert_status": "High-Risk Alert",
+      "alert_status": "Acknowledged",
       "referral_status": "Counselor Referred",
       "follow_up_date": "2026-09-29 03:00 PM",
       "support_received": true,
-      "support_outcome_notes": "Tele-MANAS session initiated. Immediate physical safety verified indoors.",
+      "support_outcome_notes": "Victim verified received psychological stabilization and escort patrol.",
       "confidence": 0.89,
-      "status": "Under Review",
-      "assigned_officer": "Officer Rajesh Kumar (SP-Cell)",
+      "status": "Resolved",
+      "assigned_officer": "Officer Rajesh Kumar",
       "speech_metrics": {
         "speech_rate_wpm": 82.0,
         "pause_count": 6,
@@ -142,13 +142,13 @@
           "case_id": "CASE-1024",
           "service_type": "Witness Protection",
           "priority": "Urgent",
-          "status": "Pending Review",
-          "assigned_to": null,
+          "status": "Assigned",
+          "assigned_to": "Inspector S. Rao (Witness Protection Squad)",
           "reason": "Night stalking around residence poses imminent risk of physical violence.",
-          "human_confirmed": false,
-          "human_notes": "Forwarded to Sub-Divisional Police Officer for mobile patrol deployment.",
+          "human_confirmed": true,
+          "human_notes": "Mobile escort patrol authorized under Sec 15A PoA Act.",
           "reviewed_by": "Officer Rajesh Kumar",
-          "updated_at": "2026-09-29 10:08 AM"
+          "updated_at": "2026-09-29 10:24 PM"
         }
       ],
       "timeline": [
@@ -199,6 +199,54 @@
           "title": "Initial Follow-up Logged",
           "desc": "Preliminary telephonic welfare check performed; victim safely secured indoors awaiting patrol.",
           "status": "active"
+        },
+        {
+          "time": "09:00 PM",
+          "title": "Service Assigned: Witness Protection",
+          "desc": "Allocated to Inspector S. Rao (Witness Protection Squad). Notes: Mobile escort patrol authorized under Sec 15A PoA Act.",
+          "status": "done"
+        },
+        {
+          "time": "09:00 PM",
+          "title": "Referral Updated: Counselor",
+          "desc": "Referral status set to 'Counselor Referred'. Assigned to: Dr. S. Anuradha (Tele-MANAS).",
+          "status": "done"
+        },
+        {
+          "time": "09:00 PM",
+          "title": "High-Risk Alert Acknowledged",
+          "desc": "Alert reviewed and acknowledged by Officer Rajesh Kumar. Reviewed urgent safety flag and contacted DSP unit.",
+          "status": "done"
+        },
+        {
+          "time": "09:00 PM",
+          "title": "Support Outcome Recorded",
+          "desc": "Support received: Yes. Notes: Victim verified received psychological stabilization and escort patrol.. By: Officer Rajesh Kumar.",
+          "status": "done"
+        },
+        {
+          "time": "10:24 PM",
+          "title": "Service Assigned: Witness Protection",
+          "desc": "Allocated to Inspector S. Rao (Witness Protection Squad). Notes: Mobile escort patrol authorized under Sec 15A PoA Act.",
+          "status": "done"
+        },
+        {
+          "time": "10:24 PM",
+          "title": "Referral Updated: Counselor",
+          "desc": "Referral status set to 'Counselor Referred'. Assigned to: Dr. S. Anuradha (Tele-MANAS).",
+          "status": "done"
+        },
+        {
+          "time": "10:24 PM",
+          "title": "High-Risk Alert Acknowledged",
+          "desc": "Alert reviewed and acknowledged by Officer Rajesh Kumar. Reviewed urgent safety flag and contacted DSP unit.",
+          "status": "done"
+        },
+        {
+          "time": "10:24 PM",
+          "title": "Support Outcome Recorded",
+          "desc": "Support received: Yes. Notes: Victim verified received psychological stabilization and escort patrol.. By: Officer Rajesh Kumar.",
+          "status": "done"
         }
       ],
       "critical_safety_flag": true,
@@ -955,6 +1003,204 @@
     }
   ],
   "audit_logs": [
+    {
+      "id": "LOG-B3BD34",
+      "timestamp": "2026-09-29 10:24 PM",
+      "user_name": "Officer Rajesh Kumar",
+      "role": "Authorized Officer",
+      "action": "Support Outcome Recorded",
+      "case_id": "NHAA-1024",
+      "access_type": "WRITE",
+      "ip_address": "10.24.110.14",
+      "details": "Support received: True. Outcome: Victim verified received psychological stabilization and escort patrol.."
+    },
+    {
+      "id": "LOG-C3EE13",
+      "timestamp": "2026-09-29 10:24 PM",
+      "user_name": "Officer Rajesh Kumar",
+      "role": "Authorized Officer",
+      "action": "High-Risk Alert Acknowledged",
+      "case_id": "NHAA-1024",
+      "access_type": "WRITE",
+      "ip_address": "10.24.110.14",
+      "details": "Acknowledged by Officer Rajesh Kumar. Notes: Reviewed urgent safety flag and contacted DSP unit.."
+    },
+    {
+      "id": "LOG-07CA6B",
+      "timestamp": "2026-09-29 10:24 PM",
+      "user_name": "Officer Rajesh Kumar",
+      "role": "Authorized Officer",
+      "action": "Referral Action: Counselor",
+      "case_id": "NHAA-1024",
+      "access_type": "ASSIGN",
+      "ip_address": "10.24.110.14",
+      "details": "Referral status: Counselor Referred. Notes: Remote psychological first-aid scheduled.."
+    },
+    {
+      "id": "LOG-303373",
+      "timestamp": "2026-09-29 10:24 PM",
+      "user_name": "Officer Rajesh Kumar",
+      "role": "Authorized Officer",
+      "action": "Conversational Assessment Session Started",
+      "case_id": null,
+      "access_type": "WRITE",
+      "ip_address": "10.24.110.14",
+      "details": "Language: Telugu, Channel: Voice Assessment, Session: SESS-63C8BD4B"
+    },
+    {
+      "id": "LOG-58E04C",
+      "timestamp": "2026-09-29 10:24 PM",
+      "user_name": "Officer Rajesh Kumar",
+      "role": "Authorized Officer",
+      "action": "Recommendation Action: ASSIGN",
+      "case_id": "NHAA-1024",
+      "access_type": "ASSIGN",
+      "ip_address": "10.24.110.14",
+      "details": "Service: Witness Protection, Target: Inspector S. Rao (Witness Protection Squad)"
+    },
+    {
+      "id": "LOG-9A3746",
+      "timestamp": "2026-09-29 10:24 PM",
+      "user_name": "Officer Rajesh Kumar",
+      "role": "Authorized Officer",
+      "action": "Viewed Detailed Case Dossier",
+      "case_id": "NHAA-1024",
+      "access_type": "READ",
+      "ip_address": "10.24.110.14",
+      "details": "Authorized review by Officer Rajesh Kumar."
+    },
+    {
+      "id": "LOG-D896D2",
+      "timestamp": "2026-09-29 10:16 PM",
+      "user_name": "Officer Rajesh Kumar",
+      "role": "Authorized Officer",
+      "action": "Conversational Assessment Session Started",
+      "case_id": null,
+      "access_type": "WRITE",
+      "ip_address": "10.24.110.14",
+      "details": "Language: Telugu, Channel: Voice Assessment, Session: SESS-CC81291A"
+    },
+    {
+      "id": "LOG-7D5EC3",
+      "timestamp": "2026-09-29 10:15 PM",
+      "user_name": "Officer Rajesh Kumar",
+      "role": "Authorized Officer",
+      "action": "Viewed Detailed Case Dossier",
+      "case_id": "NHAA-1024",
+      "access_type": "READ",
+      "ip_address": "10.24.110.14",
+      "details": "Authorized review by Officer Rajesh Kumar."
+    },
+    {
+      "id": "LOG-0A0769",
+      "timestamp": "2026-09-29 10:15 PM",
+      "user_name": "Officer Rajesh Kumar",
+      "role": "Authorized Officer",
+      "action": "Conversational Assessment Session Started",
+      "case_id": null,
+      "access_type": "WRITE",
+      "ip_address": "10.24.110.14",
+      "details": "Language: Telugu, Channel: Voice Assessment, Session: SESS-527CBD70"
+    },
+    {
+      "id": "LOG-A0B32F",
+      "timestamp": "2026-09-29 09:14 PM",
+      "user_name": "Officer Rajesh Kumar",
+      "role": "Authorized Officer",
+      "action": "Viewed Detailed Case Dossier",
+      "case_id": "NHAA-1024",
+      "access_type": "READ",
+      "ip_address": "10.24.110.14",
+      "details": "Authorized review by Officer Rajesh Kumar."
+    },
+    {
+      "id": "LOG-7C4AAF",
+      "timestamp": "2026-09-29 09:14 PM",
+      "user_name": "Officer Rajesh Kumar",
+      "role": "Authorized Officer",
+      "action": "Conversational Assessment Session Started",
+      "case_id": null,
+      "access_type": "WRITE",
+      "ip_address": "10.24.110.14",
+      "details": "Language: Telugu, Channel: Voice Assessment, Session: SESS-2461DED3"
+    },
+    {
+      "id": "LOG-7EAF5C",
+      "timestamp": "2026-09-29 09:05 PM",
+      "user_name": "Officer Rajesh Kumar",
+      "role": "Authorized Officer",
+      "action": "Conversational Assessment Session Started",
+      "case_id": null,
+      "access_type": "WRITE",
+      "ip_address": "10.24.110.14",
+      "details": "Language: Telugu, Channel: Voice Assessment, Session: SESS-5F436D20"
+    },
+    {
+      "id": "LOG-8D1112",
+      "timestamp": "2026-09-29 09:00 PM",
+      "user_name": "Officer Rajesh Kumar",
+      "role": "Authorized Officer",
+      "action": "Support Outcome Recorded",
+      "case_id": "NHAA-1024",
+      "access_type": "WRITE",
+      "ip_address": "10.24.110.14",
+      "details": "Support received: True. Outcome: Victim verified received psychological stabilization and escort patrol.."
+    },
+    {
+      "id": "LOG-EF13A3",
+      "timestamp": "2026-09-29 09:00 PM",
+      "user_name": "Officer Rajesh Kumar",
+      "role": "Authorized Officer",
+      "action": "High-Risk Alert Acknowledged",
+      "case_id": "NHAA-1024",
+      "access_type": "WRITE",
+      "ip_address": "10.24.110.14",
+      "details": "Acknowledged by Officer Rajesh Kumar. Notes: Reviewed urgent safety flag and contacted DSP unit.."
+    },
+    {
+      "id": "LOG-58330D",
+      "timestamp": "2026-09-29 09:00 PM",
+      "user_name": "Officer Rajesh Kumar",
+      "role": "Authorized Officer",
+      "action": "Referral Action: Counselor",
+      "case_id": "NHAA-1024",
+      "access_type": "ASSIGN",
+      "ip_address": "10.24.110.14",
+      "details": "Referral status: Counselor Referred. Notes: Remote psychological first-aid scheduled.."
+    },
+    {
+      "id": "LOG-F32D28",
+      "timestamp": "2026-09-29 09:00 PM",
+      "user_name": "Officer Rajesh Kumar",
+      "role": "Authorized Officer",
+      "action": "Conversational Assessment Session Started",
+      "case_id": null,
+      "access_type": "WRITE",
+      "ip_address": "10.24.110.14",
+      "details": "Language: Telugu, Channel: Voice Assessment, Session: SESS-977B73C2"
+    },
+    {
+      "id": "LOG-00BE1E",
+      "timestamp": "2026-09-29 09:00 PM",
+      "user_name": "Officer Rajesh Kumar",
+      "role": "Authorized Officer",
+      "action": "Recommendation Action: ASSIGN",
+      "case_id": "NHAA-1024",
+      "access_type": "ASSIGN",
+      "ip_address": "10.24.110.14",
+      "details": "Service: Witness Protection, Target: Inspector S. Rao (Witness Protection Squad)"
+    },
+    {
+      "id": "LOG-2E3E8D",
+      "timestamp": "2026-09-29 09:00 PM",
+      "user_name": "Officer Rajesh Kumar",
+      "role": "Authorized Officer",
+      "action": "Viewed Detailed Case Dossier",
+      "case_id": "NHAA-1024",
+      "access_type": "READ",
+      "ip_address": "10.24.110.14",
+      "details": "Authorized review by Officer Rajesh Kumar."
+    },
     {
       "id": "LOG-50D9A5",
       "timestamp": "2026-09-29 08:56 PM",

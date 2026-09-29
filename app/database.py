@@ -14,10 +14,12 @@ from app.services.nlp_analyzer import NLPAnalyzerService
 from app.services.svi_engine import SVIEngineService
 import os
 import json
+import sqlite3
 from app.services.safety_triage import SafetyTriageService
 
 DATA_DIR = os.environ.get("DATA_DIR", os.path.join(os.path.dirname(__file__), "static", "data"))
 DB_FILE = os.path.join(DATA_DIR, "db_state.json")
+DATABASE_URL = os.environ.get("DATABASE_URL")
 
 class DatabaseState:
     def __init__(self):
@@ -32,9 +34,94 @@ class DatabaseState:
             "department": "District Atrocity Protection Unit, Rangareddy",
             "email": "rajesh.kumar@telangana.gov.in"
         }
-        loaded = self.load_from_disk()
+        self._init_database_backend()
+        loaded = self.load_state()
         if not loaded:
             self.reset_demo_data()
+
+    def _init_database_backend(self):
+        """Initializes PostgreSQL or SQLite tables if DATABASE_URL is configured."""
+        if not DATABASE_URL:
+            return
+        try:
+            if DATABASE_URL.startswith("postgres://") or DATABASE_URL.startswith("postgresql://"):
+                try:
+                    import psycopg2
+                    pg_url = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+                    conn = psycopg2.connect(pg_url)
+                    with conn.cursor() as cur:
+                        cur.execute("""
+                            CREATE TABLE IF NOT EXISTS sahaaya_state (
+                                key VARCHAR(64) PRIMARY KEY,
+                                payload TEXT NOT NULL,
+                                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                            );
+                        """)
+                    conn.commit()
+                    conn.close()
+                    print("[INFO] PostgreSQL connection established and table verified.")
+                except Exception as e:
+                    print(f"[WARN] PostgreSQL connection failed: {e}. Falling back to file persistence.")
+            elif DATABASE_URL.startswith("sqlite"):
+                db_path = DATABASE_URL.replace("sqlite:///", "").replace("sqlite://", "")
+                os.makedirs(os.path.dirname(os.path.abspath(db_path)), exist_ok=True)
+                conn = sqlite3.connect(db_path)
+                with conn:
+                    conn.execute("""
+                        CREATE TABLE IF NOT EXISTS sahaaya_state (
+                            key TEXT PRIMARY KEY,
+                            payload TEXT NOT NULL,
+                            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                        );
+                    """)
+                conn.close()
+                print(f"[INFO] SQLite database initialized at {db_path}.")
+        except Exception as e:
+            print(f"[WARN] Failed to initialize database backend: {e}")
+
+    def save_state(self):
+        """Persists state to PostgreSQL/SQLite if configured, and always saves to local JSON backup."""
+        self.save_to_disk()
+        if not DATABASE_URL:
+            return
+        try:
+            data = {
+                "cases": [c.model_dump() for c in self.cases],
+                "followups": [f.model_dump() for f in self.followups],
+                "notifications": [n.model_dump() for n in self.notifications],
+                "audit_logs": [a.model_dump() for a in self.audit_logs],
+                "config": self.config.model_dump()
+            }
+            if DATABASE_URL.startswith("postgres://") or DATABASE_URL.startswith("postgresql://"):
+                try:
+                    import psycopg2
+                    pg_url = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+                    conn = psycopg2.connect(pg_url)
+                    with conn.cursor() as cur:
+                        for key, val in data.items():
+                            payload_json = json.dumps(val)
+                            cur.execute("""
+                                INSERT INTO sahaaya_state (key, payload, updated_at)
+                                VALUES (%s, %s, CURRENT_TIMESTAMP)
+                                ON CONFLICT (key) DO UPDATE SET payload = EXCLUDED.payload, updated_at = CURRENT_TIMESTAMP;
+                            """, (key, payload_json))
+                    conn.commit()
+                    conn.close()
+                except Exception as e:
+                    print(f"[WARN] PostgreSQL state save failed: {e}")
+            elif DATABASE_URL.startswith("sqlite"):
+                db_path = DATABASE_URL.replace("sqlite:///", "").replace("sqlite://", "")
+                conn = sqlite3.connect(db_path)
+                with conn:
+                    for key, val in data.items():
+                        payload_json = json.dumps(val)
+                        conn.execute("""
+                            INSERT OR REPLACE INTO sahaaya_state (key, payload, updated_at)
+                            VALUES (?, ?, CURRENT_TIMESTAMP);
+                        """, (key, payload_json))
+                conn.close()
+        except Exception as e:
+            print(f"[WARN] Failed to save state to relational database: {e}")
 
     def save_to_disk(self):
         try:
@@ -49,7 +136,51 @@ class DatabaseState:
             with open(DB_FILE, "w", encoding="utf-8") as f:
                 json.dump(data, f, indent=2, ensure_ascii=False)
         except Exception as e:
-            print(f"[WARN] Failed to persist database state: {e}")
+            print(f"[WARN] Failed to persist database state to disk: {e}")
+
+    def load_state(self) -> bool:
+        """Loads state from PostgreSQL/SQLite if available, otherwise from disk backup."""
+        if DATABASE_URL:
+            try:
+                data = {}
+                if DATABASE_URL.startswith("postgres://") or DATABASE_URL.startswith("postgresql://"):
+                    try:
+                        import psycopg2
+                        pg_url = DATABASE_URL.replace("postgres://", "postgresql://", 1)
+                        conn = psycopg2.connect(pg_url)
+                        with conn.cursor() as cur:
+                            cur.execute("SELECT key, payload FROM sahaaya_state;")
+                            rows = cur.fetchall()
+                            for k, p in rows:
+                                data[k] = json.loads(p)
+                        conn.close()
+                    except Exception as e:
+                        print(f"[WARN] Could not read from PostgreSQL: {e}")
+                elif DATABASE_URL.startswith("sqlite"):
+                    db_path = DATABASE_URL.replace("sqlite:///", "").replace("sqlite://", "")
+                    if os.path.exists(db_path):
+                        conn = sqlite3.connect(db_path)
+                        with conn:
+                            cur = conn.cursor()
+                            cur.execute("SELECT key, payload FROM sahaaya_state;")
+                            rows = cur.fetchall()
+                            for k, p in rows:
+                                data[k] = json.loads(p)
+                        conn.close()
+
+                if "cases" in data and len(data["cases"]) > 0:
+                    self.cases = [CaseRecord(**c) for c in data.get("cases", [])]
+                    self.followups = [FollowUpItem(**fo) for fo in data.get("followups", [])]
+                    self.notifications = [NotificationItem(**n) for n in data.get("notifications", [])]
+                    self.audit_logs = [AuditLogItem(**a) for a in data.get("audit_logs", [])]
+                    if "config" in data:
+                        self.config = SystemConfig(**data["config"])
+                    print(f"[INFO] Loaded {len(self.cases)} cases from relational database backend.")
+                    return True
+            except Exception as e:
+                print(f"[WARN] Relational database load failed: {e}")
+
+        return self.load_from_disk()
 
     def load_from_disk(self) -> bool:
         try:
@@ -74,7 +205,7 @@ class DatabaseState:
         self.notifications = build_demo_notifications()
         self.audit_logs = build_demo_audit_logs()
         self.config = SystemConfig()
-        self.save_to_disk()
+        self.save_state()
 
     def log_audit(self, action: str, case_id: Optional[str], access_type: str, details: str, user_name: Optional[str] = None, role: Optional[UserRole] = None):
         u_name = user_name or self.current_user["name"]
@@ -91,7 +222,7 @@ class DatabaseState:
             details=details
         )
         self.audit_logs.insert(0, log_entry)
-        self.save_to_disk()
+        self.save_state()
 
     def get_case_by_number(self, case_number: str) -> Optional[CaseRecord]:
         for c in self.cases:
