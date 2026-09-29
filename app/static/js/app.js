@@ -1,0 +1,1277 @@
+// Main Application Logic for Sahaaya AI Platform
+
+const App = {
+    state: {
+        activeTab: "landing-view",
+        currentRole: "Authorized Officer",
+        currentUser: null,
+        cases: [],
+        selectedCase: null,
+        followups: [],
+        resources: [],
+        analytics: null,
+        auditLogs: [],
+        config: null,
+        notifications: [],
+        victimConsent: true,
+        selectedLanguage: "Telugu",
+        selectedChannel: "Voice Helpline",
+        highContrast: false,
+        fontSize: "font-size-md",
+        demoWalkthroughStep: 0
+    },
+
+    init: async function() {
+        console.log("Initializing Sahaaya AI Platform...");
+        await this.loadCurrentUser();
+        await this.loadNotifications();
+        await this.loadConfig();
+        this.setupEventListeners();
+        I18N.setLanguage("English");
+        
+        // Auto-load cases list
+        await this.fetchCases();
+    },
+
+    loadCurrentUser: async function() {
+        try {
+            const res = await fetch("/api/auth/me");
+            this.state.currentUser = await res.json();
+            this.state.currentRole = this.state.currentUser.role;
+            const badge = document.getElementById("userRoleBadge");
+            const nameEl = document.getElementById("currentUserName");
+            if (badge) badge.textContent = this.state.currentRole;
+            if (nameEl) nameEl.textContent = this.state.currentUser.name;
+        } catch (e) {
+            console.error("Failed to load user:", e);
+        }
+    },
+
+    loadNotifications: async function() {
+        try {
+            const res = await fetch("/api/auth/notifications");
+            this.state.notifications = await res.json();
+            this.renderNotifications();
+        } catch (e) {
+            console.error("Failed to load notifications:", e);
+        }
+    },
+
+    renderNotifications: function() {
+        const countEl = document.getElementById("notifCount");
+        const listEl = document.getElementById("notifDropdownList");
+        const unread = this.state.notifications.filter(n => !n.read).length;
+        if (countEl) {
+            countEl.textContent = unread;
+            countEl.style.display = unread > 0 ? "inline-flex" : "none";
+        }
+        if (listEl) {
+            listEl.innerHTML = this.state.notifications.map(n => `
+                <div class="p-3 border-b border-slate-100 hover:bg-slate-50 transition cursor-pointer" onclick="App.openCaseFromNotification('${n.case_number}')">
+                    <div class="flex items-center justify-between text-xs text-slate-500 mb-1">
+                        <span class="font-semibold ${n.severity === 'critical' ? 'text-rose-600' : 'text-amber-600'}">${n.severity.toUpperCase()}</span>
+                        <span>${n.timestamp}</span>
+                    </div>
+                    <div class="text-xs font-medium text-slate-800">${n.title}</div>
+                    <div class="text-xs text-slate-600 mt-1">${n.message}</div>
+                </div>
+            `).join("");
+        }
+    },
+
+    openCaseFromNotification: function(caseNumber) {
+        document.getElementById("notifDropdown").classList.add("hidden");
+        if (caseNumber) {
+            this.viewCaseDetails(caseNumber);
+        }
+    },
+
+    loadConfig: async function() {
+        try {
+            const res = await fetch("/api/admin/config");
+            this.state.config = await res.json();
+            this.updateConfigSliders();
+        } catch (e) {
+            console.error("Failed to load config:", e);
+        }
+    },
+
+    updateConfigSliders: function() {
+        if (!this.state.config) return;
+        const lowEl = document.getElementById("cfgThresholdLow");
+        const modEl = document.getElementById("cfgThresholdMod");
+        const highEl = document.getElementById("cfgThresholdHigh");
+        const nlpEl = document.getElementById("cfgNlpWeight");
+        const speechEl = document.getElementById("cfgSpeechWeight");
+        const emoEl = document.getElementById("cfgEmotionWeight");
+
+        if (lowEl) lowEl.value = this.state.config.threshold_low_max;
+        if (modEl) modEl.value = this.state.config.threshold_mod_max;
+        if (highEl) highEl.value = this.state.config.threshold_high_max;
+        if (nlpEl) nlpEl.value = this.state.config.nlp_weight;
+        if (speechEl) speechEl.value = this.state.config.speech_weight;
+        if (emoEl) emoEl.value = this.state.config.emotion_weight;
+
+        // Label updates
+        document.getElementById("cfgValLow").textContent = this.state.config.threshold_low_max;
+        document.getElementById("cfgValMod").textContent = this.state.config.threshold_mod_max;
+        document.getElementById("cfgValHigh").textContent = this.state.config.threshold_high_max;
+        document.getElementById("cfgValNlp").textContent = this.state.config.nlp_weight;
+        document.getElementById("cfgValSpeech").textContent = this.state.config.speech_weight;
+        document.getElementById("cfgValEmo").textContent = this.state.config.emotion_weight;
+    },
+
+    switchTab: function(tabId) {
+        this.state.activeTab = tabId;
+        const views = [
+            "landing-view", "victim-view", "officer-view", "case-details-view",
+            "followups-view", "resources-view", "analytics-view", "admin-view"
+        ];
+        views.forEach(v => {
+            const el = document.getElementById(v);
+            if (el) el.classList.add("hidden");
+        });
+
+        const target = document.getElementById(tabId);
+        if (target) {
+            target.classList.remove("hidden");
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // Highlight header nav buttons
+        document.querySelectorAll(".nav-link").forEach(btn => {
+            btn.classList.remove("border-teal-600", "text-teal-700", "font-bold");
+            btn.classList.add("text-slate-600");
+        });
+        const activeNav = document.getElementById(`nav-${tabId}`);
+        if (activeNav) {
+            activeNav.classList.add("border-teal-600", "text-teal-700", "font-bold");
+            activeNav.classList.remove("text-slate-600");
+        }
+
+        // Trigger view-specific loaders
+        if (tabId === "officer-view") this.fetchCases();
+        if (tabId === "followups-view") this.fetchFollowups();
+        if (tabId === "resources-view") this.fetchResources();
+        if (tabId === "analytics-view") this.fetchAnalytics();
+        if (tabId === "admin-view") this.fetchAuditLogs();
+    },
+
+    switchRole: async function(newRole) {
+        try {
+            const res = await fetch("/api/auth/switch-role", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ role: newRole })
+            });
+            const data = await res.json();
+            if (data.success) {
+                this.state.currentUser = data.user;
+                this.state.currentRole = data.user.role;
+                document.getElementById("userRoleBadge").textContent = data.user.role;
+                document.getElementById("currentUserName").textContent = data.user.name;
+                this.showToast(`Switched active profile to: ${data.user.name} (${data.user.role})`, "info");
+                
+                if (data.user.role === "Victim/User") {
+                    this.switchTab("victim-view");
+                } else if (data.user.role === "Administrator") {
+                    this.switchTab("admin-view");
+                } else {
+                    this.switchTab("officer-view");
+                }
+            }
+        } catch (e) {
+            console.error("Role switch error:", e);
+        }
+    },
+
+    // ==========================================
+    // VICTIM FIRST-CONTACT & CHAT PORTAL
+    // ==========================================
+    setVictimLanguage: function(lang) {
+        this.state.selectedLanguage = lang;
+        I18N.setLanguage(lang);
+        const langDisplay = document.getElementById("selectedLangDisplay");
+        if (langDisplay) langDisplay.textContent = lang;
+
+        // Auto-populate empathetic demo phrase for convenience
+        const sampleNarratives = {
+            "Telugu": "నమస్కారం... మమ్మల్ని ఊరి నుంచి వెలివేశారు... పొలం లాక్కుంటామని కొట్టారు... రాత్రిళ్ళు ఇంటి చుట్టూ తిరుగుతూ చంపేస్తామని బెదిరిస్తున్నారు... ఎవరూ సహాయం చేయడం లేదు... పిల్లలతో కలిసి ఇంట్లో దాక్కున్నాం... చాలా భయంగా ఉంది...",
+            "Hindi": "सर बचाओ! हथियार लेकर लोग हमारे घर के बाहर खड़े हैं और दरवाजा तोड़ने की कोशिश कर रहे हैं... बहुत डर लग रहा है, जिंदा नहीं छोड़ेंगे कह रहे हैं...",
+            "Kannada": "ನಮಗೆ ಪುನರ್ವಸತಿ ಪರಿಹಾರ ಇನ್ನೂ ಸಿಕ್ಕಿಲ್ಲ... ಕಳೆದ ಮೂರು ತಿಂಗಳಿಂದ ಮನೆ ಕಳೆದುಕೊಂಡು ತುಂಬಾ ಸಂಕಷ್ಟದಲ್ಲಿದ್ದೇವೆ... ಮಕ್ಕಳಿಗೆ ಊಟಕ್ಕೂ ತೊಂದರೆಯಾಗಿದೆ...",
+            "Tamil": "எங்கள் தெருவில் தண்ணீர் பிடிக்க விடாமல் தடுத்து மிரட்டுகிறார்கள். சாதி சொல்லி அவமானப்படுத்தினார்கள்... மிகவும் பயமாக இருக்கிறது...",
+            "English": "Our family is facing continuous intimidation and death threats from dominant landlords following our land title registration. They have cut our water access and threaten to burn our home."
+        };
+        const input = document.getElementById("victimTextInput");
+        if (input && (!input.value || input.value.trim() === "")) {
+            input.value = sampleNarratives[lang] || sampleNarratives["English"];
+        }
+    },
+
+    setChannel: function(channelName) {
+        this.state.selectedChannel = channelName;
+        document.querySelectorAll(".channel-btn").forEach(b => {
+            b.classList.remove("border-teal-600", "bg-teal-50", "text-teal-900");
+            b.classList.add("border-slate-200", "bg-white", "text-slate-700");
+        });
+        const active = document.getElementById(`chan-${channelName.replace(/\s+/g, '')}`);
+        if (active) {
+            active.classList.add("border-teal-600", "bg-teal-50", "text-teal-900");
+            active.classList.remove("border-slate-200", "bg-white", "text-slate-700");
+        }
+
+        const voiceSection = document.getElementById("voiceRecorderContainer");
+        const isVoiceChannel = ["Voice Helpline", "Voice Recording Upload", "IVRS"].includes(channelName);
+        if (voiceSection) {
+            if (isVoiceChannel) voiceSection.classList.remove("hidden");
+            else voiceSection.classList.add("hidden");
+        }
+    },
+
+    toggleRecording: async function() {
+        const btn = document.getElementById("recordVoiceBtn");
+        const statusEl = document.getElementById("recordingStatusText");
+        
+        if (!AudioEngine.isRecording) {
+            await AudioEngine.startRecording("waveformCanvas", "recordDurationTimer");
+            btn.classList.remove("bg-teal-600", "hover:bg-teal-700");
+            btn.classList.add("bg-rose-600", "hover:bg-rose-700");
+            btn.innerHTML = `<span class="inline-block w-3 h-3 bg-white rounded-sm mr-2 animate-pulse"></span> Stop Recording`;
+            if (statusEl) statusEl.textContent = "Listening to acoustic prosody & hesitation markers in real-time...";
+        } else {
+            AudioEngine.stopRecording();
+            btn.classList.add("bg-teal-600", "hover:bg-teal-700");
+            btn.classList.remove("bg-rose-600", "hover:bg-rose-700");
+            btn.innerHTML = `<svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg> Record Voice`;
+            if (statusEl) statusEl.textContent = "Voice interaction captured. Ready for multilingual stress assessment.";
+            
+            // Auto run assessment
+            this.runInteractiveAssessment();
+        }
+    },
+
+    setConsent: function(consented) {
+        this.state.victimConsent = consented;
+        const banner = document.getElementById("consentStatusBanner");
+        const submitBtn = document.getElementById("submitCaseBtn");
+        const consentModal = document.getElementById("consentModal");
+
+        if (consentModal) consentModal.classList.add("hidden");
+
+        if (consented) {
+            if (banner) {
+                banner.className = "p-3 rounded-lg bg-emerald-50 border border-emerald-200 text-xs text-emerald-800 flex items-center justify-between";
+                banner.innerHTML = `
+                    <div class="flex items-center space-x-2">
+                        <span class="w-2.5 h-2.5 bg-emerald-500 rounded-full"></span>
+                        <span>Consent recorded: Authorized for AI triage and support allocation.</span>
+                    </div>
+                    <button onclick="App.showConsentModal()" class="text-emerald-700 underline font-medium hover:text-emerald-900">Review Rights</button>
+                `;
+            }
+            if (submitBtn) submitBtn.disabled = false;
+            this.showToast("Consent registered: AI triage assessment active.", "success");
+        } else {
+            if (banner) {
+                banner.className = "p-3 rounded-lg bg-amber-50 border border-amber-200 text-xs text-amber-800 flex items-center justify-between";
+                banner.innerHTML = `
+                    <div class="flex items-center space-x-2">
+                        <span class="w-2.5 h-2.5 bg-amber-500 rounded-full"></span>
+                        <span>Consent declined: AI distress analysis bypassed. Manual routing only.</span>
+                    </div>
+                    <button onclick="App.showConsentModal()" class="text-amber-700 underline font-medium hover:text-amber-900">Grant Consent</button>
+                `;
+            }
+            this.showToast("Consent declined: Assessment engine will not process interaction.", "warning");
+        }
+    },
+
+    showConsentModal: function() {
+        const modal = document.getElementById("consentModal");
+        if (modal) modal.classList.remove("hidden");
+    },
+
+    clearVictimForm: function() {
+        const input = document.getElementById("victimTextInput");
+        if (input) input.value = "";
+        const preview = document.getElementById("sviAssessmentPreview");
+        if (preview) preview.classList.add("hidden");
+        AudioEngine.stopRecording();
+        document.getElementById("recordDurationTimer").textContent = "00:00";
+        this.showToast("Conversation cleared.", "info");
+    },
+
+    triggerEmergencySOS: function() {
+        const modal = document.getElementById("emergencyAlertModal");
+        if (modal) modal.classList.remove("hidden");
+    },
+
+    closeEmergencyModal: function() {
+        const modal = document.getElementById("emergencyAlertModal");
+        if (modal) modal.classList.add("hidden");
+    },
+
+    quickExitToSafePage: function() {
+        // Instant privacy blank page escape
+        window.location.href = "https://www.google.com";
+    },
+
+    runInteractiveAssessment: async function() {
+        if (!this.state.victimConsent) {
+            this.showToast("Consent required to run AI stress assessment.", "warning");
+            this.showConsentModal();
+            return;
+        }
+
+        const rawText = document.getElementById("victimTextInput").value.trim();
+        if (!rawText && !AudioEngine.isRecording) {
+            this.showToast("Please provide a text or voice interaction description.", "warning");
+            return;
+        }
+
+        const loadingSpinner = document.getElementById("assessmentLoadingSpinner");
+        if (loadingSpinner) loadingSpinner.classList.remove("hidden");
+
+        try {
+            const res = await fetch("/api/assessment/analyze-interactive", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    channel: this.state.selectedChannel,
+                    language: this.state.selectedLanguage,
+                    raw_text: rawText,
+                    audio_present: ["Voice Helpline", "Voice Recording Upload", "IVRS"].includes(this.state.selectedChannel),
+                    audio_duration_sec: AudioEngine.getRecordedDurationSec(),
+                    consent_given: true,
+                    district: "Rangareddy",
+                    state: "Telangana"
+                })
+            });
+
+            if (!res.ok) {
+                const err = await res.json();
+                this.showToast(err.detail || "Assessment calculation error.", "error");
+                return;
+            }
+
+            const data = await res.json();
+            this.renderAssessmentPreview(data);
+        } catch (e) {
+            console.error("Assessment error:", e);
+            this.showToast("Failed to run assessment simulation.", "error");
+        } finally {
+            if (loadingSpinner) loadingSpinner.classList.add("hidden");
+        }
+    },
+
+    renderAssessmentPreview: function(data) {
+        const preview = document.getElementById("sviAssessmentPreview");
+        if (!preview) return;
+        preview.classList.remove("hidden");
+
+        const svi = data.svi;
+        const scoreBadge = document.getElementById("previewSviScore");
+        const levelBadge = document.getElementById("previewRiskLevel");
+        const summaryText = document.getElementById("previewSummaryText");
+        const factorsContainer = document.getElementById("previewFactorsContainer");
+        const urgentBanner = document.getElementById("previewUrgentBanner");
+
+        if (scoreBadge) scoreBadge.textContent = `${svi.score} / 100`;
+
+        // Color coding for risk tiers
+        const colors = {
+            "LOW": "bg-emerald-100 text-emerald-800 border-emerald-300",
+            "MODERATE": "bg-amber-100 text-amber-800 border-amber-300",
+            "HIGH": "bg-orange-100 text-orange-800 border-orange-300",
+            "CRITICAL": "bg-rose-100 text-rose-800 border-rose-300 animate-pulse"
+        };
+        if (levelBadge) {
+            levelBadge.className = `px-3 py-1 rounded-full text-xs font-bold border ${colors[svi.risk_level] || colors["LOW"]}`;
+            levelBadge.textContent = svi.risk_level;
+        }
+
+        if (summaryText) summaryText.textContent = svi.summary_text;
+
+        // Emergency state
+        if (urgentBanner) {
+            if (svi.critical_safety_alert || svi.risk_level === "CRITICAL") {
+                urgentBanner.classList.remove("hidden");
+            } else {
+                urgentBanner.classList.add("hidden");
+            }
+        }
+
+        // Render Explainable factors
+        if (factorsContainer) {
+            factorsContainer.innerHTML = svi.explainability_factors.map(f => `
+                <div class="p-2.5 rounded bg-slate-50 border border-slate-200 text-xs">
+                    <div class="flex items-center justify-between font-semibold text-slate-800">
+                        <span>✓ ${f.factor}</span>
+                        <span class="text-teal-700">${f.weight}% Weight</span>
+                    </div>
+                    <div class="text-slate-600 mt-1">${f.description}</div>
+                    ${f.evidence_snippet ? `<div class="text-[11px] text-slate-500 italic mt-1 font-mono">Evidence: "${f.evidence_snippet}"</div>` : ''}
+                </div>
+            `).join("");
+        }
+
+        // Auto render mini radar chart
+        AppCharts.renderEmotionRadar("previewEmotionChart", data.emotion_metrics);
+    },
+
+    submitVictimCase: async function() {
+        const rawText = document.getElementById("victimTextInput").value.trim();
+        if (!rawText) {
+            this.showToast("Please enter or record a complaint description.", "warning");
+            return;
+        }
+
+        try {
+            const res = await fetch("/api/assessment/submit-case", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    channel: this.state.selectedChannel,
+                    language: this.state.selectedLanguage,
+                    raw_text: rawText,
+                    audio_present: ["Voice Helpline", "Voice Recording Upload", "IVRS"].includes(this.state.selectedChannel),
+                    audio_duration_sec: AudioEngine.getRecordedDurationSec(),
+                    consent_given: true,
+                    district: "Rangareddy",
+                    state: "Telangana",
+                    complainant_alias: "Complainant-Citizen"
+                })
+            });
+
+            const data = await res.json();
+            if (data.success) {
+                this.showToast(`Case ${data.case.case_number} registered and forwarded for authorized human review!`, "success");
+                
+                // Show victim dashboard for this case
+                this.renderVictimDashboard(data.case);
+            }
+        } catch (e) {
+            console.error("Submission failed:", e);
+            this.showToast("Failed to submit case.", "error");
+        }
+    },
+
+    renderVictimDashboard: function(caseRecord) {
+        document.getElementById("victimSubmissionSection").classList.add("hidden");
+        const dash = document.getElementById("victimDashboardSection");
+        if (!dash) return;
+        dash.classList.remove("hidden");
+
+        document.getElementById("vdCaseNumber").textContent = caseRecord.case_number;
+        document.getElementById("vdDate").textContent = caseRecord.created_at;
+        document.getElementById("vdStatus").textContent = caseRecord.status;
+        document.getElementById("vdLanguage").textContent = caseRecord.language;
+        document.getElementById("vdChannel").textContent = caseRecord.channel;
+        document.getElementById("vdSviBadge").textContent = `SVI: ${caseRecord.svi_score}/100 (${caseRecord.risk_level})`;
+
+        // 7-Stage Case Progress Timeline
+        const timelineEl = document.getElementById("vdTimelineList");
+        if (timelineEl) {
+            const stages = [
+                { title: "Complaint Registered", desc: "Digital intake recorded via " + caseRecord.channel, active: true },
+                { title: "Initial Contact", desc: "First-contact session established", active: true },
+                { title: "AI-Assisted Assessment", desc: `SVI ${caseRecord.svi_score}/100 categorized`, active: true },
+                { title: "Human Review", desc: "Officer assigned for triage verification", active: caseRecord.status !== "Pending" },
+                { title: "Support Assigned", desc: "Counselling or legal aid counsel dispatched", active: caseRecord.support_recommendations.some(r => r.status === "Assigned") },
+                { title: "Follow-up", desc: "Scheduled safety & psychological check-in", active: false },
+                { title: "Resolution", desc: "Formal resolution and case sign-off", active: false }
+            ];
+
+            timelineEl.innerHTML = stages.map((s, idx) => `
+                <div class="flex items-start space-x-3 relative pb-6 last:pb-0">
+                    <div class="flex flex-col items-center">
+                        <div class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${s.active ? 'bg-teal-600 text-white shadow-sm' : 'bg-slate-200 text-slate-500'}">
+                            ${idx + 1}
+                        </div>
+                        ${idx < stages.length - 1 ? `<div class="w-0.5 h-full ${s.active ? 'bg-teal-600' : 'bg-slate-200'} mt-1"></div>` : ''}
+                    </div>
+                    <div class="pt-0.5">
+                        <div class="text-xs font-semibold ${s.active ? 'text-teal-900' : 'text-slate-500'}">${s.title}</div>
+                        <div class="text-xs text-slate-600">${s.desc}</div>
+                    </div>
+                </div>
+            `).join("");
+        }
+    },
+
+    returnToComplaintForm: function() {
+        document.getElementById("victimSubmissionSection").classList.remove("hidden");
+        document.getElementById("victimDashboardSection").classList.add("hidden");
+        this.clearVictimForm();
+    },
+
+    // ==========================================
+    // AUTHORIZED OFFICER DASHBOARD & CASES TABLE
+    // ==========================================
+    fetchCases: async function() {
+        const risk = document.getElementById("filterRisk") ? document.getElementById("filterRisk").value : "ALL";
+        const lang = document.getElementById("filterLanguage") ? document.getElementById("filterLanguage").value : "ALL";
+        const channel = document.getElementById("filterChannel") ? document.getElementById("filterChannel").value : "ALL";
+        const status = document.getElementById("filterStatus") ? document.getElementById("filterStatus").value : "ALL";
+        const search = document.getElementById("searchCasesInput") ? document.getElementById("searchCasesInput").value : "";
+
+        try {
+            const q = new URLSearchParams({
+                risk, language: lang, channel, status, search
+            });
+            const res = await fetch(`/api/cases?${q.toString()}`);
+            this.state.cases = await res.json();
+            this.renderCasesTable();
+            this.updateOfficerKpis();
+        } catch (e) {
+            console.error("Failed to load cases:", e);
+        }
+    },
+
+    updateOfficerKpis: function() {
+        const total = this.state.cases.length;
+        const high = this.state.cases.filter(c => c.risk_level === "HIGH").length;
+        const crit = this.state.cases.filter(c => c.risk_level === "CRITICAL").length;
+        const pending = this.state.cases.filter(c => c.status === "Pending" || c.status === "Under Review").length;
+
+        document.getElementById("kpiTotalCases").textContent = total;
+        document.getElementById("kpiHighRisk").textContent = high;
+        document.getElementById("kpiCritical").textContent = crit;
+        document.getElementById("kpiPendingReview").textContent = pending;
+    },
+
+    renderCasesTable: function() {
+        const tbody = document.getElementById("casesTableBody");
+        if (!tbody) return;
+
+        if (this.state.cases.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="8" class="text-center py-8 text-sm text-slate-500">No cases match the specified triage filters.</td></tr>`;
+            return;
+        }
+
+        const riskBadge = (lvl) => {
+            if (lvl === "CRITICAL") return `<span class="px-2 py-0.5 rounded text-[11px] font-bold bg-rose-100 text-rose-800 border border-rose-300 animate-pulse">🔴 CRITICAL</span>`;
+            if (lvl === "HIGH") return `<span class="px-2 py-0.5 rounded text-[11px] font-bold bg-orange-100 text-orange-800 border border-orange-300">🟠 HIGH</span>`;
+            if (lvl === "MODERATE") return `<span class="px-2 py-0.5 rounded text-[11px] font-bold bg-amber-100 text-amber-800 border border-amber-300">🟡 MODERATE</span>`;
+            return `<span class="px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">🟢 LOW</span>`;
+        };
+
+        const statusBadge = (s) => {
+            if (s === "Resolved") return `<span class="text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded text-xs">Resolved</span>`;
+            if (s === "Assigned") return `<span class="text-blue-700 bg-blue-50 px-2 py-0.5 rounded text-xs">Assigned</span>`;
+            if (s === "Under Review") return `<span class="text-amber-700 bg-amber-50 px-2 py-0.5 rounded text-xs">Under Review</span>`;
+            return `<span class="text-slate-600 bg-slate-100 px-2 py-0.5 rounded text-xs">Pending</span>`;
+        };
+
+        tbody.innerHTML = this.state.cases.map(c => `
+            <tr class="hover:bg-slate-50 transition border-b border-slate-100">
+                <td class="py-3 px-4 text-xs font-mono font-bold text-teal-800">
+                    ${c.case_number}
+                    ${c.critical_safety_flag ? `<span class="ml-1 text-[10px] bg-rose-600 text-white px-1 rounded">EMERGENCY</span>` : ''}
+                </td>
+                <td class="py-3 px-4 text-xs text-slate-600">${c.created_at}</td>
+                <td class="py-3 px-4 text-xs text-slate-700 font-medium">${c.language}</td>
+                <td class="py-3 px-4 text-xs text-slate-600">${c.channel}</td>
+                <td class="py-3 px-4 text-xs font-bold ${c.svi_score >= 66 ? 'text-rose-700' : 'text-slate-800'}">
+                    ${c.svi_score} / 100
+                </td>
+                <td class="py-3 px-4 text-xs">${riskBadge(c.risk_level)}</td>
+                <td class="py-3 px-4 text-xs">${statusBadge(c.status)}</td>
+                <td class="py-3 px-4 text-xs">
+                    <button onclick="App.viewCaseDetails('${c.case_number}')" class="px-2.5 py-1 rounded bg-teal-600 hover:bg-teal-700 text-white font-medium text-xs transition">
+                        Review Dossier
+                    </button>
+                </td>
+            </tr>
+        `).join("");
+    },
+
+    // ==========================================
+    // CASE DETAILS & DEEP TRIAGE DOSSIER
+    // ==========================================
+    viewCaseDetails: async function(caseNumber) {
+        try {
+            const res = await fetch(`/api/cases/${caseNumber}`);
+            if (!res.ok) {
+                this.showToast("Case not found.", "error");
+                return;
+            }
+            this.state.selectedCase = await res.json();
+            this.renderCaseDetailsView(this.state.selectedCase);
+            this.switchTab("case-details-view");
+        } catch (e) {
+            console.error("Failed to load case details:", e);
+        }
+    },
+
+    renderCaseDetailsView: function(c) {
+        document.getElementById("cdCaseNumber").textContent = c.case_number;
+        document.getElementById("cdDate").textContent = c.created_at;
+        document.getElementById("cdLanguage").textContent = c.language;
+        document.getElementById("cdChannel").textContent = c.channel;
+        document.getElementById("cdDistrict").textContent = `${c.district}, ${c.state}`;
+        document.getElementById("cdComplainantAlias").textContent = c.complainant_alias;
+        document.getElementById("cdSviScore").textContent = `${c.svi_score} / 100`;
+
+        const riskBadge = document.getElementById("cdRiskBadge");
+        if (riskBadge) {
+            riskBadge.textContent = c.risk_level;
+            riskBadge.className = `px-3 py-1 rounded-full text-xs font-bold ${
+                c.risk_level === 'CRITICAL' ? 'bg-rose-100 text-rose-800 border border-rose-300' :
+                c.risk_level === 'HIGH' ? 'bg-orange-100 text-orange-800 border border-orange-300' :
+                c.risk_level === 'MODERATE' ? 'bg-amber-100 text-amber-800 border border-amber-300' :
+                'bg-emerald-100 text-emerald-800 border border-emerald-300'
+            }`;
+        }
+
+        // Emergency Alert Header
+        const emergencyBanner = document.getElementById("cdEmergencyBanner");
+        if (emergencyBanner) {
+            if (c.critical_safety_flag || c.risk_level === "CRITICAL") {
+                emergencyBanner.classList.remove("hidden");
+            } else {
+                emergencyBanner.classList.add("hidden");
+            }
+        }
+
+        // Confidence Indicator
+        const confEl = document.getElementById("cdConfidenceBadge");
+        if (confEl) confEl.textContent = `AI Confidence: ${Math.round(c.confidence * 100)}%`;
+
+        // Render Charts
+        if (c.emotion_metrics) {
+            AppCharts.renderEmotionRadar("cdEmotionRadarChart", c.emotion_metrics);
+        }
+        if (c.speech_metrics) {
+            AppCharts.renderSpeechMetrics("cdSpeechBarChart", c.speech_metrics);
+        }
+
+        // Render Explainable AI Cards
+        const factorsContainer = document.getElementById("cdExplainabilityCards");
+        if (factorsContainer) {
+            factorsContainer.innerHTML = c.explainability.map(f => `
+                <div class="p-3 rounded-lg border border-slate-200 bg-white shadow-sm hover:border-teal-400 transition">
+                    <div class="flex items-center justify-between font-semibold text-xs text-slate-800">
+                        <span class="flex items-center">
+                            <span class="w-2 h-2 rounded-full mr-2 ${f.indicator_group === 'Safety' ? 'bg-rose-500' : 'bg-teal-500'}"></span>
+                            ${f.factor}
+                        </span>
+                        <span class="text-[11px] font-mono text-slate-500 bg-slate-100 px-2 py-0.5 rounded">Weight: ${f.weight}%</span>
+                    </div>
+                    <div class="text-xs text-slate-600 mt-1.5 leading-relaxed">${f.description}</div>
+                    ${f.evidence_snippet ? `
+                        <div class="mt-2 text-[11px] bg-slate-50 text-slate-700 px-2.5 py-1.5 rounded font-mono border border-slate-100">
+                            <strong>Evidence:</strong> "${f.evidence_snippet}"
+                        </div>
+                    ` : ''}
+                </div>
+            `).join("");
+        }
+
+        // Render Support Recommendations
+        const recsContainer = document.getElementById("cdRecommendationsList");
+        if (recsContainer) {
+            recsContainer.innerHTML = c.support_recommendations.map(r => `
+                <div class="p-4 rounded-lg border ${r.status === 'Assigned' ? 'border-teal-300 bg-teal-50/30' : 'border-slate-200 bg-white'} shadow-sm">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-2">
+                            <span class="font-bold text-sm text-slate-800">${r.service_type}</span>
+                            <span class="text-[11px] px-2 py-0.5 rounded font-medium ${r.priority === 'Urgent' ? 'bg-rose-100 text-rose-700' : 'bg-slate-100 text-slate-600'}">${r.priority}</span>
+                            <span class="text-xs font-semibold ${r.status === 'Assigned' ? 'text-teal-700' : r.status === 'Rejected' ? 'text-rose-700' : 'text-amber-700'}">
+                                [${r.status}]
+                            </span>
+                        </div>
+                        <div class="flex items-center space-x-2">
+                            ${r.status === 'Pending Review' ? `
+                                <button onclick="App.openAssignModal('${r.id}', '${r.service_type}')" class="px-2.5 py-1 rounded bg-teal-600 hover:bg-teal-700 text-white text-xs font-medium">Assign</button>
+                                <button onclick="App.rejectRecommendation('${r.id}')" class="px-2.5 py-1 rounded bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-medium">Reject</button>
+                            ` : `
+                                <span class="text-xs text-slate-500 italic">Confirmed by: ${r.reviewed_by || 'Officer'}</span>
+                            `}
+                        </div>
+                    </div>
+                    <div class="text-xs text-slate-600 mt-1">${r.reason}</div>
+                    ${r.assigned_to ? `<div class="mt-2 text-xs font-medium text-teal-800 bg-teal-100/60 p-2 rounded">Assigned to: ${r.assigned_to} | Notes: ${r.human_notes || 'Authorized'}</div>` : ''}
+                </div>
+            `).join("");
+        }
+
+        // Render Chronological Timeline
+        const tlContainer = document.getElementById("cdTimelineContainer");
+        if (tlContainer) {
+            tlContainer.innerHTML = c.timeline.map((t, idx) => `
+                <div class="flex items-start space-x-3 relative pb-5 last:pb-0">
+                    <div class="flex flex-col items-center">
+                        <div class="w-6 h-6 rounded-full flex items-center justify-center text-[10px] font-bold ${t.status === 'done' ? 'bg-teal-600 text-white' : 'bg-amber-500 text-white animate-pulse'}">
+                            ${idx + 1}
+                        </div>
+                        ${idx < c.timeline.length - 1 ? `<div class="w-0.5 h-full bg-slate-200 mt-1"></div>` : ''}
+                    </div>
+                    <div>
+                        <div class="text-xs font-mono text-slate-500">${t.time}</div>
+                        <div class="text-xs font-bold text-slate-800">${t.title}</div>
+                        <div class="text-xs text-slate-600 mt-0.5">${t.desc}</div>
+                    </div>
+                </div>
+            `).join("");
+        }
+    },
+
+    openAssignModal: function(recId, serviceType) {
+        document.getElementById("assignRecId").value = recId;
+        document.getElementById("assignModalServiceTitle").textContent = serviceType;
+        document.getElementById("assignModal").classList.remove("hidden");
+    },
+
+    closeAssignModal: function() {
+        document.getElementById("assignModal").classList.add("hidden");
+    },
+
+    confirmAssignment: async function() {
+        const recId = document.getElementById("assignRecId").value;
+        const assignee = document.getElementById("assigneeSelect").value;
+        const notes = document.getElementById("assignNotesInput").value;
+
+        if (!this.state.selectedCase) return;
+
+        try {
+            const res = await fetch(`/api/cases/${this.state.selectedCase.case_number}/recommendations/${recId}/action`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    action: "ASSIGN",
+                    assigned_to: assignee,
+                    notes: notes,
+                    reviewer_name: this.state.currentUser.name
+                })
+            });
+
+            const data = await res.json();
+            if (data.success) {
+                this.closeAssignModal();
+                this.showToast(`Support service successfully assigned to: ${assignee}`, "success");
+                // Reload dossier
+                await this.viewCaseDetails(this.state.selectedCase.case_number);
+            }
+        } catch (e) {
+            console.error("Assignment failed:", e);
+        }
+    },
+
+    rejectRecommendation: async function(recId) {
+        const reason = prompt("Please provide reason for rejecting this AI support recommendation:");
+        if (reason === null) return;
+
+        try {
+            const res = await fetch(`/api/cases/${this.state.selectedCase.case_number}/recommendations/${recId}/action`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    action: "REJECT",
+                    notes: reason,
+                    reviewer_name: this.state.currentUser.name
+                })
+            });
+            const data = await res.json();
+            if (data.success) {
+                this.showToast("Recommendation marked as Rejected with audit record.", "info");
+                await this.viewCaseDetails(this.state.selectedCase.case_number);
+            }
+        } catch (e) {
+            console.error("Rejection error:", e);
+        }
+    },
+
+    triggerCaseEmergencyAction: async function(actionType) {
+        if (!this.state.selectedCase) return;
+
+        const confirmAction = confirm(`Execute simulated emergency protocol: [${actionType}] for Case ${this.state.selectedCase.case_number}?`);
+        if (!confirmAction) return;
+
+        try {
+            const res = await fetch(`/api/cases/${this.state.selectedCase.case_number}/emergency-action`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ action_type: actionType })
+            });
+
+            const data = await res.json();
+            if (data.success) {
+                this.showToast(`Emergency alert '${actionType}' dispatched to on-duty response team!`, "success");
+                await this.viewCaseDetails(this.state.selectedCase.case_number);
+            }
+        } catch (e) {
+            console.error("Emergency dispatch error:", e);
+        }
+    },
+
+    openEvidenceModal: function() {
+        if (!this.state.selectedCase) return;
+        const c = this.state.selectedCase;
+        document.getElementById("evidenceCaseNum").textContent = c.case_number;
+        document.getElementById("evidenceLanguage").textContent = c.language;
+        document.getElementById("evidenceMaskedNarrative").textContent = c.masked_narrative || "No narrative available.";
+
+        const rawContainer = document.getElementById("evidenceRawTranscript");
+        // Anonymization / sensitive data masking toggle
+        rawContainer.textContent = c.raw_text || "(Encrypted raw voice transcript protected under statutory privilege)";
+
+        document.getElementById("evidenceModal").classList.remove("hidden");
+    },
+
+    closeEvidenceModal: function() {
+        document.getElementById("evidenceModal").classList.add("hidden");
+    },
+
+    // ==========================================
+    // FOLLOW-UP MANAGEMENT SYSTEM
+    // ==========================================
+    fetchFollowups: async function(status = "ALL") {
+        try {
+            const res = await fetch(`/api/followups?status=${status}`);
+            this.state.followups = await res.json();
+            this.renderFollowupsList();
+        } catch (e) {
+            console.error("Failed to load follow-ups:", e);
+        }
+    },
+
+    renderFollowupsList: function() {
+        const container = document.getElementById("followupsContainer");
+        if (!container) return;
+
+        if (this.state.followups.length === 0) {
+            container.innerHTML = `<div class="text-center py-10 text-slate-500 text-xs">No follow-ups found under this status.</div>`;
+            return;
+        }
+
+        container.innerHTML = this.state.followups.map(f => `
+            <div class="p-4 rounded-lg border border-slate-200 bg-white shadow-sm flex flex-col md:flex-row md:items-center md:justify-between space-y-3 md:space-y-0">
+                <div>
+                    <div class="flex items-center space-x-2">
+                        <span class="text-xs font-mono font-bold text-teal-800">${f.case_number}</span>
+                        <span class="text-xs font-semibold px-2 py-0.5 rounded bg-slate-100 text-slate-700">${f.category}</span>
+                        <span class="text-xs px-2 py-0.5 rounded font-bold ${
+                            f.status === 'Completed' ? 'bg-emerald-100 text-emerald-800' :
+                            f.status === 'Overdue' ? 'bg-rose-100 text-rose-800 animate-pulse' :
+                            'bg-blue-100 text-blue-800'
+                        }">${f.status}</span>
+                    </div>
+                    <div class="text-xs text-slate-700 font-medium mt-1">${f.notes}</div>
+                    <div class="text-[11px] text-slate-500 mt-1">Scheduled: ${f.scheduled_date} at ${f.scheduled_time} | Assigned: ${f.assigned_to}</div>
+                </div>
+                <div class="flex items-center space-x-2">
+                    ${f.status !== 'Completed' ? `
+                        <button onclick="App.markFollowupStatus('${f.id}', 'Completed')" class="px-3 py-1 rounded bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-medium">Mark Done</button>
+                    ` : `
+                        <span class="text-xs text-emerald-700 font-semibold">✓ Completed</span>
+                    `}
+                    <button onclick="App.viewCaseDetails('${f.case_number}')" class="px-3 py-1 rounded bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-medium">View Dossier</button>
+                </div>
+            </div>
+        `).join("");
+
+        // Render Follow-up Vulnerability Progression Chart if historical data available
+        const withHistory = this.state.followups.find(f => f.historical_svi && f.historical_svi.length > 1);
+        if (withHistory) {
+            document.getElementById("vulnerabilityTimelineCard").classList.remove("hidden");
+            document.getElementById("vulnCaseNum").textContent = withHistory.case_number;
+            AppCharts.renderVulnerabilityTimeline("followupVulnerabilityChart", withHistory.historical_svi);
+        }
+    },
+
+    markFollowupStatus: async function(id, newStatus) {
+        try {
+            const res = await fetch(`/api/followups/${id}/status?new_status=${newStatus}`, { method: "PUT" });
+            const data = await res.json();
+            if (data.success) {
+                this.showToast(`Follow-up updated to: ${newStatus}`, "success");
+                this.fetchFollowups();
+            }
+        } catch (e) {
+            console.error("Status update error:", e);
+        }
+    },
+
+    openNewFollowupModal: function() {
+        const caseNumInput = document.getElementById("folModalCaseNum");
+        if (caseNumInput && this.state.selectedCase) {
+            caseNumInput.value = this.state.selectedCase.case_number;
+        }
+        document.getElementById("newFollowupModal").classList.remove("hidden");
+    },
+
+    closeNewFollowupModal: function() {
+        document.getElementById("newFollowupModal").classList.add("hidden");
+    },
+
+    submitNewFollowup: async function() {
+        const caseNum = document.getElementById("folModalCaseNum").value;
+        const category = document.getElementById("folModalCategory").value;
+        const date = document.getElementById("folModalDate").value;
+        const time = document.getElementById("folModalTime").value;
+        const assignee = document.getElementById("folModalAssignee").value;
+        const notes = document.getElementById("folModalNotes").value;
+
+        if (!caseNum || !date || !time) {
+            this.showToast("Please provide case number, date, and time.", "warning");
+            return;
+        }
+
+        try {
+            const res = await fetch("/api/followups", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    case_number: caseNum,
+                    category: category,
+                    scheduled_date: date,
+                    scheduled_time: time,
+                    assigned_to: assignee,
+                    notes: notes
+                })
+            });
+            const data = await res.json();
+            if (data.success) {
+                this.closeNewFollowupModal();
+                this.showToast("Follow-up successfully scheduled.", "success");
+                this.fetchFollowups();
+            }
+        } catch (e) {
+            console.error("Scheduling error:", e);
+        }
+    },
+
+    // ==========================================
+    // SUPPORT RESOURCE DIRECTORY
+    // ==========================================
+    fetchResources: async function() {
+        const state = document.getElementById("resFilterState") ? document.getElementById("resFilterState").value : "ALL";
+        const cat = document.getElementById("resFilterCategory") ? document.getElementById("resFilterCategory").value : "ALL";
+        const lang = document.getElementById("resFilterLanguage") ? document.getElementById("resFilterLanguage").value : "ALL";
+        const is24x7 = document.getElementById("resFilter24x7") ? document.getElementById("resFilter24x7").checked : false;
+
+        try {
+            const q = new URLSearchParams({ state, category: cat, language: lang, available_24x7: is24x7 });
+            const res = await fetch(`/api/resources?${q.toString()}`);
+            this.state.resources = await res.json();
+            this.renderResourcesList();
+        } catch (e) {
+            console.error("Failed to load resources:", e);
+        }
+    },
+
+    renderResourcesList: function() {
+        const grid = document.getElementById("resourcesGrid");
+        if (!grid) return;
+
+        if (this.state.resources.length === 0) {
+            grid.innerHTML = `<div class="col-span-full text-center py-10 text-slate-500 text-xs">No support centers match these criteria.</div>`;
+            return;
+        }
+
+        grid.innerHTML = this.state.resources.map(r => `
+            <div class="p-4 rounded-xl border border-slate-200 bg-white shadow-sm hover:shadow-md transition flex flex-col justify-between">
+                <div>
+                    <div class="flex items-start justify-between">
+                        <span class="text-xs font-bold text-teal-800 bg-teal-50 px-2 py-0.5 rounded">${r.category}</span>
+                        ${r.available_24x7 ? `<span class="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-1.5 py-0.5 rounded">24x7 ACTIVE</span>` : ''}
+                    </div>
+                    <div class="font-bold text-sm text-slate-900 mt-2">${r.name}</div>
+                    <div class="text-xs text-slate-600 mt-1">${r.address}</div>
+                    <div class="text-xs text-slate-500 mt-1">📍 ${r.district}, ${r.state}</div>
+                    <div class="mt-2 text-xs font-mono font-bold text-slate-800 bg-slate-50 p-1.5 rounded">
+                        📞 ${r.phone}
+                    </div>
+                </div>
+                <div class="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500">
+                    <span>Languages: ${r.languages.slice(0, 3).join(", ")}</span>
+                    <span class="text-emerald-600 font-semibold">✓ Verified</span>
+                </div>
+            </div>
+        `).join("");
+    },
+
+    // ==========================================
+    // AGGREGATE ANALYTICS & EARLY WARNING ALERTS
+    // ==========================================
+    fetchAnalytics: async function() {
+        try {
+            const res = await fetch("/api/analytics");
+            this.state.analytics = await res.json();
+            this.renderAnalyticsCharts();
+        } catch (e) {
+            console.error("Failed to load analytics:", e);
+        }
+    },
+
+    renderAnalyticsCharts: function() {
+        const a = this.state.analytics;
+        if (!a) return;
+
+        document.getElementById("analyticsTotalCases").textContent = a.total_cases;
+        document.getElementById("analyticsAvgSvi").textContent = `${a.average_svi} / 100`;
+
+        // Render Charts
+        AppCharts.renderRiskDonut("analyticsRiskDonutChart", a.risk_distribution);
+        AppCharts.renderBarDistribution("analyticsLanguageChart", a.cases_by_language, "#0d9488");
+        AppCharts.renderBarDistribution("analyticsChannelChart", a.cases_by_channel, "#0284c7");
+        AppCharts.renderBarDistribution("analyticsStateChart", a.cases_by_state, "#6366f1");
+
+        // Render Early Warning Alerts
+        const alertContainer = document.getElementById("earlyWarningAlertsList");
+        if (alertContainer && a.early_warning_alerts) {
+            alertContainer.innerHTML = a.early_warning_alerts.map(ew => `
+                <div class="p-4 rounded-xl border border-amber-300 bg-amber-50/70 shadow-sm">
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs font-bold text-amber-900 flex items-center">
+                            <span class="w-2.5 h-2.5 bg-amber-500 rounded-full mr-2 animate-ping"></span>
+                            ${ew.title}
+                        </span>
+                        <span class="text-[11px] font-mono font-semibold text-amber-800 bg-amber-100 px-2 py-0.5 rounded">${ew.timeframe}</span>
+                    </div>
+                    <div class="text-xs text-amber-900 mt-2 font-medium">Location: ${ew.district}, ${ew.state} | Cluster: ${ew.sample_size}</div>
+                    <div class="text-xs text-amber-800 mt-1"><strong>Actionable Signal:</strong> ${ew.recommendation}</div>
+                    <div class="text-[10px] text-amber-700 italic mt-2 border-t border-amber-200 pt-1">${ew.disclaimer}</div>
+                </div>
+            `).join("");
+        }
+    },
+
+    // ==========================================
+    // ADMIN PANEL & AUDIT LOGS
+    // ==========================================
+    fetchAuditLogs: async function() {
+        const search = document.getElementById("searchAuditInput") ? document.getElementById("searchAuditInput").value : "";
+        const access = document.getElementById("filterAuditType") ? document.getElementById("filterAuditType").value : "ALL";
+
+        try {
+            const q = new URLSearchParams({ search, access_type: access });
+            const res = await fetch(`/api/audit?${q.toString()}`);
+            this.state.auditLogs = await res.json();
+            this.renderAuditLogsTable();
+            this.checkSystemHealth();
+        } catch (e) {
+            console.error("Failed to load audit logs:", e);
+        }
+    },
+
+    renderAuditLogsTable: function() {
+        const tbody = document.getElementById("auditTableBody");
+        if (!tbody) return;
+
+        tbody.innerHTML = this.state.auditLogs.map(l => `
+            <tr class="hover:bg-slate-50 transition border-b border-slate-100 text-xs">
+                <td class="py-2.5 px-3 font-mono text-slate-500">${l.timestamp}</td>
+                <td class="py-2.5 px-3 font-medium text-slate-800">${l.user_name}</td>
+                <td class="py-2.5 px-3 text-slate-600">${l.role}</td>
+                <td class="py-2.5 px-3 font-semibold text-teal-800">${l.action}</td>
+                <td class="py-2.5 px-3 font-mono text-slate-700">${l.case_id || 'N/A'}</td>
+                <td class="py-2.5 px-3 font-mono text-slate-500">${l.access_type}</td>
+                <td class="py-2.5 px-3 text-slate-600 truncate max-w-xs">${l.details}</td>
+            </tr>
+        `).join("");
+    },
+
+    checkSystemHealth: async function() {
+        try {
+            const res = await fetch("/api/admin/system-health");
+            const h = await res.json();
+            document.getElementById("healthStatusText").textContent = `${h.status} (Uptime: ${h.uptime})`;
+            document.getElementById("healthQueueText").textContent = `${h.triage_queue_depth} Cases Pending Triage`;
+        } catch (e) {
+            console.error("Health check error:", e);
+        }
+    },
+
+    saveAdminConfig: async function() {
+        const payload = {
+            threshold_low_max: parseInt(document.getElementById("cfgThresholdLow").value),
+            threshold_mod_max: parseInt(document.getElementById("cfgThresholdMod").value),
+            threshold_high_max: parseInt(document.getElementById("cfgThresholdHigh").value),
+            speech_weight: parseFloat(document.getElementById("cfgSpeechWeight").value),
+            nlp_weight: parseFloat(document.getElementById("cfgNlpWeight").value),
+            emotion_weight: parseFloat(document.getElementById("cfgEmotionWeight").value),
+            confidence_threshold: 0.75,
+            anonymize_analytics: true,
+            auto_detect_language: true
+        };
+
+        try {
+            const res = await fetch("/api/admin/config", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if (data.success) {
+                this.state.config = data.config;
+                this.updateConfigSliders();
+                this.showToast("System SVI thresholds and model weights updated & audit logged.", "success");
+            }
+        } catch (e) {
+            console.error("Config save failed:", e);
+        }
+    },
+
+    exportAuditLogsCSV: function() {
+        if (!this.state.auditLogs.length) return;
+        const headers = ["Timestamp", "User", "Role", "Action", "CaseID", "AccessType", "Details"];
+        const rows = this.state.auditLogs.map(l => [
+            `"${l.timestamp}"`,
+            `"${l.user_name}"`,
+            `"${l.role}"`,
+            `"${l.action}"`,
+            `"${l.case_id || ''}"`,
+            `"${l.access_type}"`,
+            `"${(l.details || '').replace(/"/g, '""')}"`
+        ]);
+        const csvContent = "data:text/csv;charset=utf-8," + [headers.join(","), ...rows.map(r => r.join(","))].join("\n");
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", `sahaaya_audit_logs_${Date.now()}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        this.showToast("Audit logs exported to CSV.", "info");
+    },
+
+    // ==========================================
+    // PRESENTATION DEMO MODE PRESETS
+    // ==========================================
+    loadDemoPreset: async function(caseNumber) {
+        this.showToast(`Loading demo preset: ${caseNumber}...`, "info");
+        await this.viewCaseDetails(caseNumber);
+    },
+
+    startGuidedWalkthrough: function() {
+        this.state.demoWalkthroughStep = 1;
+        this.nextWalkthroughStep();
+    },
+
+    nextWalkthroughStep: function() {
+        const step = this.state.demoWalkthroughStep;
+        if (step === 1) {
+            this.switchTab("landing-view");
+            this.showWalkthroughBanner(
+                "Step 1: Public Intake & Landing",
+                "Victims access Sahaaya AI via multiple entry points (Helpline, IVRS, Chatbot, Portal). Emphasizes privacy and consent.",
+                "Proceed to Step 2: Victim Voice Contact"
+            );
+        } else if (step === 2) {
+            this.switchTab("victim-view");
+            this.setVictimLanguage("Telugu");
+            this.setChannel("Voice Helpline");
+            this.showWalkthroughBanner(
+                "Step 2: Multilingual First Contact (Telugu Scenario)",
+                "Victim provides consent and shares their narrative in Telugu. Speech prosody and hesitation markers are actively tracked.",
+                "Proceed to Step 3: Run AI Assessment"
+            );
+        } else if (step === 3) {
+            this.runInteractiveAssessment();
+            this.showWalkthroughBanner(
+                "Step 3: Real-Time SVI & Multimodal Assessment",
+                "AI engine calculates SVI 82/100 (HIGH Risk). Extracts acoustic tremor, prosodic pauses, and threat keywords.",
+                "Proceed to Step 4: Authorized Case Dossier"
+            );
+        } else if (step === 4) {
+            this.viewCaseDetails("NHAA-1024");
+            this.showWalkthroughBanner(
+                "Step 4: Deep Triage & Explainable AI",
+                "Authorized Officer reviews 'Why this assessment?' factor weights, emotion radar chart, and assigns human counselling & legal aid.",
+                "Proceed to Step 5: Follow-up & Early Warning"
+            );
+        } else if (step === 5) {
+            this.switchTab("analytics-view");
+            this.showWalkthroughBanner(
+                "Step 5: Follow-Up Intelligence & Early Warning",
+                "Anonymized trend detection alerts officers of cluster patterns in Rangareddy district. Complete audit ledger maintained.",
+                "Finish Walkthrough"
+            );
+        } else {
+            this.hideWalkthroughBanner();
+            this.showToast("Guided demonstration completed!", "success");
+        }
+        this.state.demoWalkthroughStep++;
+    },
+
+    showWalkthroughBanner: function(title, body, btnText) {
+        let banner = document.getElementById("walkthroughBanner");
+        if (!banner) {
+            banner = document.createElement("div");
+            banner.id = "walkthroughBanner";
+            banner.className = "fixed bottom-5 left-1/2 transform -translate-x-1/2 z-50 bg-slate-900 text-white p-4 rounded-xl shadow-2xl border border-teal-500 max-w-xl w-full flex items-center justify-between";
+            document.body.appendChild(banner);
+        }
+        banner.innerHTML = `
+            <div>
+                <div class="text-xs font-bold text-teal-400 uppercase tracking-wide">${title}</div>
+                <div class="text-xs text-slate-300 mt-1 leading-snug">${body}</div>
+            </div>
+            <div class="ml-4 flex items-center space-x-2">
+                <button onclick="App.nextWalkthroughStep()" class="px-3 py-1.5 rounded bg-teal-500 hover:bg-teal-600 text-slate-900 font-bold text-xs whitespace-nowrap">${btnText}</button>
+                <button onclick="App.hideWalkthroughBanner()" class="text-slate-400 hover:text-white text-xs">✕</button>
+            </div>
+        `;
+        banner.classList.remove("hidden");
+    },
+
+    hideWalkthroughBanner: function() {
+        const banner = document.getElementById("walkthroughBanner");
+        if (banner) banner.classList.add("hidden");
+    },
+
+    // ==========================================
+    // ACCESSIBILITY & TOASTS
+    // ==========================================
+    toggleHighContrast: function() {
+        this.state.highContrast = !this.state.highContrast;
+        if (this.state.highContrast) {
+            document.body.classList.add("high-contrast");
+            this.showToast("High contrast mode enabled", "info");
+        } else {
+            document.body.classList.remove("high-contrast");
+            this.showToast("Standard contrast restored", "info");
+        }
+    },
+
+    setFontSize: function(sizeClass) {
+        document.body.classList.remove("font-size-sm", "font-size-md", "font-size-lg", "font-size-xl");
+        document.body.classList.add(sizeClass);
+        this.state.fontSize = sizeClass;
+    },
+
+    showToast: function(msg, type = "info") {
+        const toast = document.getElementById("appToast");
+        if (!toast) return;
+        toast.textContent = msg;
+        toast.className = `fixed top-5 right-5 z-50 px-4 py-2.5 rounded-lg text-xs font-semibold shadow-xl text-white transition-all transform duration-300 ${
+            type === 'success' ? 'bg-emerald-600' :
+            type === 'error' ? 'bg-rose-600' :
+            type === 'warning' ? 'bg-amber-600' :
+            'bg-slate-800'
+        }`;
+        toast.classList.remove("hidden", "opacity-0", "translate-y-[-10px]");
+        toast.classList.add("opacity-100", "translate-y-0");
+
+        setTimeout(() => {
+            toast.classList.add("opacity-0", "translate-y-[-10px]");
+            setTimeout(() => toast.classList.add("hidden"), 300);
+        }, 3500);
+    },
+
+    setupEventListeners: function() {
+        // Notification bell dropdown toggle
+        const bell = document.getElementById("notifBellBtn");
+        if (bell) {
+            bell.addEventListener("click", () => {
+                document.getElementById("notifDropdown").classList.toggle("hidden");
+            });
+        }
+    }
+};
+
+window.addEventListener("DOMContentLoaded", () => {
+    App.init();
+});

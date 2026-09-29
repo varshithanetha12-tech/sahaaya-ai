@@ -1,0 +1,86 @@
+/* Custom styles for Sahaaya AI Platform */
+
+@keyframes pulse-subtle {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.85; transform: scale(1.02); }
+}
+
+@keyframes waveform-anim {
+    0% { height: 12%; }
+    50% { height: 95%; }
+    100% { height: 12%; }
+}
+
+.pulse-emergency {
+    animation: pulse-subtle 1.8s infinite ease-in-out;
+}
+
+.waveform-bar {
+    animation: waveform-anim 1.2s infinite ease-in-out;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+::-webkit-scrollbar-track {
+    background: #f1f5f9;
+}
+::-webkit-scrollbar-thumb {
+    background: #94a3b8;
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #64748b;
+}
+
+/* High Contrast Accessibility Mode */
+body.high-contrast {
+    background-color: #000000 !important;
+    color: #ffffff !important;
+}
+
+body.high-contrast .bg-white,
+body.high-contrast .bg-slate-50,
+body.high-contrast .bg-slate-100 {
+    background-color: #121212 !important;
+    color: #ffffff !important;
+    border-color: #4ade80 !important;
+}
+
+body.high-contrast .text-slate-600,
+body.high-contrast .text-slate-500,
+body.high-contrast .text-slate-700 {
+    color: #e2e8f0 !important;
+}
+
+body.high-contrast a,
+body.high-contrast button {
+    text-decoration: underline;
+    font-weight: 700;
+}
+
+body.high-contrast .border-slate-200 {
+    border-color: #64748b !important;
+}
+
+/* Font Size Scaling */
+body.font-size-sm {
+    font-size: 14px;
+}
+body.font-size-md {
+    font-size: 16px;
+}
+body.font-size-lg {
+    font-size: 18px;
+}
+body.font-size-xl {
+    font-size: 20px;
+}
+
+/* Audio Waveform Canvas */
+#waveformCanvas {
+    background: linear-gradient(180deg, #042f2e 0%, #0f172a 100%);
+    border-radius: 0.5rem;
+}

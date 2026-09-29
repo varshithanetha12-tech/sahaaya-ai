@@ -1,0 +1,1417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sahaaya AI — Real-Time Stress & Trauma Assessment Platform</title>
+    <!-- Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Chart.js via CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Custom Stylesheet -->
+    <link rel="stylesheet" href="/static/css/custom.css">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        sahaaya: {
+                            50: '#f0fdfa',
+                            100: '#ccfbf1',
+                            500: '#14b8a6',
+                            600: '#0d9488',
+                            700: '#0f766e',
+                            800: '#115e59',
+                            900: '#134e4a',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen flex flex-col font-size-md">
+
+    <!-- TOP PUBLIC SERVICE & ACCESSIBILITY BAR -->
+    <div class="bg-slate-900 text-slate-300 text-xs py-1.5 px-4 sm:px-8 border-b border-slate-800 flex flex-wrap items-center justify-between">
+        <div class="flex items-center space-x-3">
+            <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span class="font-medium tracking-wide">National Atrocity Helpline & Integrated Triage Portal • Government of India Support Ecosystem</span>
+        </div>
+        <div class="flex items-center space-x-4 mt-1 sm:mt-0">
+            <!-- Accessibility font size buttons -->
+            <div class="flex items-center space-x-1 border-r border-slate-700 pr-3">
+                <span class="text-slate-400 mr-1 text-[11px]">Text:</span>
+                <button onclick="App.setFontSize('font-size-sm')" class="px-1.5 py-0.5 rounded hover:bg-slate-800 text-[11px] font-bold">A-</button>
+                <button onclick="App.setFontSize('font-size-md')" class="px-1.5 py-0.5 rounded hover:bg-slate-800 text-[11px] font-bold">A</button>
+                <button onclick="App.setFontSize('font-size-lg')" class="px-1.5 py-0.5 rounded hover:bg-slate-800 text-[11px] font-bold">A+</button>
+            </div>
+            <!-- High contrast mode toggle -->
+            <button onclick="App.toggleHighContrast()" class="hover:text-white flex items-center space-x-1 text-[11px]">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                <span>Contrast</span>
+            </button>
+            <!-- 24x7 Helpline Hotline Tag -->
+            <span class="bg-rose-900/60 text-rose-300 px-2 py-0.5 rounded font-mono font-bold text-[11px]">
+                SOS Toll-Free: 14566 / 112
+            </span>
+        </div>
+    </div>
+
+    <!-- MAIN NAVBAR -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-40 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between h-16">
+            <!-- Brand & Emblems -->
+            <div class="flex items-center space-x-3 cursor-pointer" onclick="App.switchTab('landing-view')">
+                <div class="w-10 h-10 rounded-lg bg-gradient-to-tr from-teal-700 to-teal-500 flex items-center justify-center text-white font-black text-xl shadow-md">
+                    S
+                </div>
+                <div>
+                    <div class="font-extrabold text-base tracking-tight text-slate-900 flex items-center space-x-2">
+                        <span>Sahaaya AI</span>
+                        <span class="text-[10px] bg-teal-100 text-teal-800 font-bold px-1.5 py-0.5 rounded tracking-normal">TRIAGE PLATFORM</span>
+                    </div>
+                    <div class="text-[11px] text-slate-500 font-medium -mt-0.5">Real-Time Stress & Trauma Assessment System</div>
+                </div>
+            </div>
+
+            <!-- Main Nav Items -->
+            <nav class="hidden md:flex items-center space-x-1 lg:space-x-2 text-xs font-semibold">
+                <button id="nav-landing-view" onclick="App.switchTab('landing-view')" class="nav-link px-3 py-2 rounded-md hover:bg-slate-100 transition border-b-2 border-transparent">
+                    Home
+                </button>
+                <button id="nav-victim-view" onclick="App.switchTab('victim-view')" class="nav-link px-3 py-2 rounded-md hover:bg-slate-100 transition border-b-2 border-transparent flex items-center space-x-1">
+                    <span class="w-2 h-2 rounded-full bg-teal-500"></span>
+                    <span>Victim Portal</span>
+                </button>
+                <button id="nav-officer-view" onclick="App.switchTab('officer-view')" class="nav-link px-3 py-2 rounded-md hover:bg-slate-100 transition border-b-2 border-transparent">
+                    Officer Dashboard
+                </button>
+                <button id="nav-followups-view" onclick="App.switchTab('followups-view')" class="nav-link px-3 py-2 rounded-md hover:bg-slate-100 transition border-b-2 border-transparent">
+                    Follow-ups
+                </button>
+                <button id="nav-resources-view" onclick="App.switchTab('resources-view')" class="nav-link px-3 py-2 rounded-md hover:bg-slate-100 transition border-b-2 border-transparent">
+                    Resources Directory
+                </button>
+                <button id="nav-analytics-view" onclick="App.switchTab('analytics-view')" class="nav-link px-3 py-2 rounded-md hover:bg-slate-100 transition border-b-2 border-transparent">
+                    Analytics & Trends
+                </button>
+                <button id="nav-admin-view" onclick="App.switchTab('admin-view')" class="nav-link px-3 py-2 rounded-md hover:bg-slate-100 transition border-b-2 border-transparent">
+                    Admin
+                </button>
+            </nav>
+
+            <!-- User Role Switcher & Notifications -->
+            <div class="flex items-center space-x-3">
+                <!-- Notification Bell -->
+                <div class="relative">
+                    <button id="notifBellBtn" class="p-2 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-full relative transition">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+                        <span id="notifCount" class="absolute top-1 right-1 w-4 h-4 bg-rose-600 text-white rounded-full text-[10px] font-bold flex items-center justify-center">2</span>
+                    </button>
+                    <!-- Notification Dropdown -->
+                    <div id="notifDropdown" class="hidden absolute right-0 mt-2 w-80 bg-white rounded-xl shadow-xl border border-slate-200 z-50 overflow-hidden">
+                        <div class="p-3 bg-slate-50 border-b border-slate-100 font-bold text-xs text-slate-800 flex items-center justify-between">
+                            <span>Triage Notifications</span>
+                            <button onclick="App.loadNotifications()" class="text-[11px] text-teal-700 font-normal hover:underline">Refresh</button>
+                        </div>
+                        <div id="notifDropdownList" class="max-h-72 overflow-y-auto"></div>
+                    </div>
+                </div>
+
+                <!-- Active Role Selector Dropdown -->
+                <div class="flex items-center bg-slate-100 rounded-lg p-1 border border-slate-200">
+                    <span class="text-[11px] text-slate-500 px-2 font-medium">Role:</span>
+                    <select id="roleSelector" onchange="App.switchRole(this.value)" class="bg-transparent text-xs font-bold text-slate-800 focus:outline-none cursor-pointer">
+                        <option value="Authorized Officer">Authorized Officer</option>
+                        <option value="Counsellor">Counsellor</option>
+                        <option value="Legal Professional">Legal Professional</option>
+                        <option value="Administrator">Administrator</option>
+                        <option value="Victim/User">Victim / User</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- HACKATHON PRESENTATION & DEMO MODE TOOLBAR -->
+        <div class="bg-gradient-to-r from-teal-900 via-slate-900 to-indigo-950 text-white px-4 py-2 text-xs border-t border-teal-800 flex flex-wrap items-center justify-between gap-2 shadow-inner">
+            <div class="flex items-center space-x-2">
+                <span class="bg-teal-500 text-slate-950 font-black text-[10px] px-2 py-0.5 rounded uppercase tracking-wider">DEMO PRESETS</span>
+                <span class="text-slate-300 hidden sm:inline text-[11px]">Instant evaluation scenarios:</span>
+                <div class="flex items-center space-x-1.5">
+                    <button onclick="App.loadDemoPreset('NHAA-1001')" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-emerald-500/40 text-[11px] font-semibold transition">
+                        🟢 Case 001 (Low SVI: 22)
+                    </button>
+                    <button onclick="App.loadDemoPreset('NHAA-1002')" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-amber-400 border border-amber-500/40 text-[11px] font-semibold transition">
+                        🟡 Case 002 (Mod SVI: 52)
+                    </button>
+                    <button onclick="App.loadDemoPreset('NHAA-1024')" class="px-2.5 py-1 rounded bg-teal-800 hover:bg-teal-700 text-teal-200 border border-teal-400 text-[11px] font-bold shadow-sm transition">
+                        🟠 Case 003 (Telugu Voice NHAA-1024)
+                    </button>
+                    <button onclick="App.loadDemoPreset('NHAA-1004')" class="px-2.5 py-1 rounded bg-rose-950 hover:bg-rose-900 text-rose-300 border border-rose-500 text-[11px] font-bold animate-pulse transition">
+                        🔴 Case 004 (Critical Alert SVI: 94)
+                    </button>
+                </div>
+            </div>
+            <button onclick="App.startGuidedWalkthrough()" class="px-3 py-1 rounded bg-amber-500 hover:bg-amber-600 text-slate-950 font-extrabold text-[11px] flex items-center space-x-1.5 shadow-sm transition">
+                <span>🚀 Launch Guided Walkthrough</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- CONTENT VIEWS CONTAINER -->
+    <main class="flex-grow">
+
+        <!-- ================================================================= -->
+        <!-- VIEW 1: LANDING PAGE -->
+        <!-- ================================================================= -->
+        <section id="landing-view" class="view-section">
+            <!-- Hero -->
+            <div class="bg-gradient-to-b from-teal-50/70 via-white to-slate-50 border-b border-slate-200 py-16 px-4 sm:px-6 lg:px-8 text-center">
+                <div class="max-w-4xl mx-auto">
+                    <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-teal-100 text-teal-800 mb-4 border border-teal-200">
+                        🛡️ National Atrocity Distress Triage & Support Ecosystem
+                    </span>
+                    <h1 class="text-3xl sm:text-5xl font-black text-slate-900 tracking-tight leading-tight">
+                        AI-Assisted Support for Those <br class="hidden sm:inline"> Who Need It Most
+                    </h1>
+                    <p class="mt-4 text-base sm:text-lg text-slate-600 max-w-2xl mx-auto leading-relaxed">
+                        Helping authorized professionals identify signs of acute psychological trauma, fear, and intimidation at first contact to rapidly dispatch human counselling, protection, and legal aid.
+                    </p>
+
+                    <!-- CTA Buttons -->
+                    <div class="mt-8 flex flex-wrap justify-center gap-4">
+                        <button onclick="App.switchTab('victim-view')" class="px-6 py-3.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-sm shadow-lg shadow-teal-700/20 transition flex items-center space-x-2">
+                            <span>Start Support / File Complaint</span>
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                        </button>
+                        <button onclick="App.switchTab('officer-view')" class="px-6 py-3.5 rounded-xl bg-white hover:bg-slate-50 text-slate-800 font-bold text-sm border border-slate-300 shadow-sm transition">
+                            Authorized Professional Portal
+                        </button>
+                        <button onclick="document.getElementById('how-it-works-section').scrollIntoView({behavior: 'smooth'})" class="px-5 py-3.5 rounded-xl text-slate-600 hover:text-slate-900 font-semibold text-sm transition">
+                            How It Works ↓
+                        </button>
+                    </div>
+
+                    <!-- Core Medical & Ethical Disclaimer -->
+                    <div class="mt-8 max-w-xl mx-auto p-3.5 rounded-xl bg-amber-50/80 border border-amber-200 text-xs text-amber-900 flex items-start space-x-2.5 text-left">
+                        <span class="text-base">⚠️</span>
+                        <div>
+                            <strong class="font-bold">Important Notice & Ethics Commitment:</strong>
+                            Sahaaya AI is a decision-support and triage triage prioritization index. It does <em>not</em> provide medical, clinical, or psychiatric diagnoses. All safety decisions and service assignments are confirmed exclusively by trained human professionals.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Three Steps Section: Listen, Assess, Support -->
+            <div id="how-it-works-section" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+                <div class="text-center max-w-2xl mx-auto mb-12">
+                    <h2 class="text-2xl sm:text-3xl font-black text-slate-900">How Sahaaya AI Works</h2>
+                    <p class="text-sm text-slate-600 mt-2">A unified 3-phase pipeline bridging first contact to multi-agency rehabilitation.</p>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <!-- Step 1 -->
+                    <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm relative">
+                        <div class="w-12 h-12 rounded-xl bg-teal-100 text-teal-800 flex items-center justify-center font-black text-lg mb-4">
+                            01
+                        </div>
+                        <h3 class="text-lg font-bold text-slate-900">1. Listen Across Channels</h3>
+                        <p class="text-xs text-slate-600 mt-2 leading-relaxed">
+                            Complainants connect via Voice Helpline, Chatbot, Mobile App, IVRS, or Grievance Portal in any of 10 Indian languages. Explicit consent is verified upfront before analysis begins.
+                        </p>
+                    </div>
+                    <!-- Step 2 -->
+                    <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm relative">
+                        <div class="w-12 h-12 rounded-xl bg-sky-100 text-sky-800 flex items-center justify-center font-black text-lg mb-4">
+                            02
+                        </div>
+                        <h3 class="text-lg font-bold text-slate-900">2. AI-Assisted Assessment</h3>
+                        <p class="text-xs text-slate-600 mt-2 leading-relaxed">
+                            Evaluates speech prosody (pauses, tremors, speech rate) and multilingual NLP narratives (intimidation, boycott, fear). Computes the <strong>Stress Vulnerability Index (SVI: 0-100)</strong> with full explainability.
+                        </p>
+                    </div>
+                    <!-- Step 3 -->
+                    <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm relative">
+                        <div class="w-12 h-12 rounded-xl bg-emerald-100 text-emerald-800 flex items-center justify-center font-black text-lg mb-4">
+                            03
+                        </div>
+                        <h3 class="text-lg font-bold text-slate-900">3. Human-Centered Support</h3>
+                        <p class="text-xs text-slate-600 mt-2 leading-relaxed">
+                            Authorized protection officers and counsellors confirm allocations for Tele-MANAS therapy, free legal aid defense counsel, or emergency police escort with continuous follow-up tracking.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Feature Highlights Grid -->
+                <div class="mt-16 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <div class="p-5 rounded-xl border border-slate-200 bg-white">
+                        <div class="text-teal-600 font-bold text-sm mb-1">🗣️ Multilingual Access</div>
+                        <div class="text-xs text-slate-600">Full speech and NLP processing across Telugu, Hindi, Tamil, Kannada, Malayalam, Marathi, Bengali, Gujarati, Odia, and English.</div>
+                    </div>
+                    <div class="p-5 rounded-xl border border-slate-200 bg-white">
+                        <div class="text-amber-600 font-bold text-sm mb-1">🔍 Explainable AI</div>
+                        <div class="text-xs text-slate-600">Every SVI score is accompanied by transparent, audit-ready contributing factors and acoustic markers.</div>
+                    </div>
+                    <div class="p-5 rounded-xl border border-slate-200 bg-white">
+                        <div class="text-rose-600 font-bold text-sm mb-1">🚨 Safety Triage Layer</div>
+                        <div class="text-xs text-slate-600">Immediate automated triggers flag active armed mobs, nocturnal harassment, or acute despair directly to on-duty response cells.</div>
+                    </div>
+                    <div class="p-5 rounded-xl border border-slate-200 bg-white">
+                        <div class="text-indigo-600 font-bold text-sm mb-1">🔒 Privacy-by-Design</div>
+                        <div class="text-xs text-slate-600">PII masking, role-based access control (RBAC), and immutable audit logging guarantee statutory confidentiality.</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================================================================= -->
+        <!-- VIEW 2: VICTIM PORTAL & CHAT INTERFACE -->
+        <!-- ================================================================= -->
+        <section id="victim-view" class="view-section hidden max-w-5xl mx-auto px-4 sm:px-6 py-8">
+            
+            <!-- Victim Submission Sub-Section -->
+            <div id="victimSubmissionSection">
+                <!-- Calm Header -->
+                <div class="bg-gradient-to-r from-teal-800 to-slate-900 text-white p-6 sm:p-8 rounded-2xl shadow-md mb-6">
+                    <div class="flex flex-wrap items-center justify-between gap-4">
+                        <div>
+                            <span class="text-xs font-bold text-teal-300 uppercase tracking-wider">SAHAAYA FIRST CONTACT HELPLINE</span>
+                            <h2 class="text-xl sm:text-2xl font-bold mt-1" data-i18n="victimWelcome">
+                                You are not alone. Tell us what happened in your own words.
+                            </h2>
+                            <p class="text-xs text-teal-100/80 mt-1 max-w-xl">
+                                We are here to listen with empathy. You can speak or write in your native mother tongue.
+                            </p>
+                        </div>
+                        <!-- Emergency SOS Button -->
+                        <button onclick="App.triggerEmergencySOS()" class="px-4 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-extrabold text-xs shadow-md flex items-center space-x-2 transition pulse-emergency">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                            <span data-i18n="emergencyBtn">Emergency Help / SOS (14566)</span>
+                        </button>
+                    </div>
+
+                    <!-- Language Selector Row -->
+                    <div class="mt-6 pt-4 border-t border-teal-700/60 flex flex-wrap items-center justify-between gap-3 text-xs">
+                        <div class="flex items-center space-x-2">
+                            <span class="text-teal-200 font-semibold" data-i18n="selectLanguage">Preferred Language:</span>
+                            <select id="victimLanguageSelect" onchange="App.setVictimLanguage(this.value)" class="bg-teal-950/70 border border-teal-600 rounded-lg px-3 py-1.5 text-white font-medium focus:outline-none">
+                                <option value="Telugu">తెలుగు (Telugu)</option>
+                                <option value="Hindi">हिन्दी (Hindi)</option>
+                                <option value="Tamil">தமிழ் (Tamil)</option>
+                                <option value="Kannada">ಕನ್ನಡ (Kannada)</option>
+                                <option value="Malayalam">മലയാളം (Malayalam)</option>
+                                <option value="Marathi">मराठी (Marathi)</option>
+                                <option value="Bengali">বাংলা (Bengali)</option>
+                                <option value="Gujarati">ગુજરાતી (Gujarati)</option>
+                                <option value="Odia">ଓଡ଼ିଆ (Odia)</option>
+                                <option value="English">English</option>
+                                <option value="Auto Detect Language">Auto Detect Language</option>
+                            </select>
+                        </div>
+                        <div class="text-[11px] text-teal-200">
+                            Active Language: <strong id="selectedLangDisplay" class="text-white">Telugu</strong>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Consent Status Banner -->
+                <div id="consentStatusBanner" class="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-xs text-emerald-900 flex items-center justify-between mb-6 shadow-sm">
+                    <div class="flex items-center space-x-2">
+                        <span class="w-2.5 h-2.5 bg-emerald-500 rounded-full"></span>
+                        <span><strong>Consent Confirmed:</strong> Information will be analyzed solely for trauma triage and prioritizing support services.</span>
+                    </div>
+                    <button onclick="App.showConsentModal()" class="text-teal-700 underline font-semibold hover:text-teal-900 text-xs">
+                        Review / Modify Consent
+                    </button>
+                </div>
+
+                <!-- Channel Selector Tabs (Section 2) -->
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm mb-6">
+                    <label class="block text-xs font-bold text-slate-700 mb-2 uppercase tracking-wide">Select First-Contact Channel:</label>
+                    <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
+                        <button id="chan-VoiceHelpline" onclick="App.setChannel('Voice Helpline')" class="channel-btn p-2.5 rounded-xl border border-teal-600 bg-teal-50 text-teal-900 text-xs font-semibold text-center transition flex flex-col items-center">
+                            <span class="text-base mb-1">📞</span>
+                            <span>Voice Call</span>
+                        </button>
+                        <button id="chan-Chatbot" onclick="App.setChannel('Chatbot')" class="channel-btn p-2.5 rounded-xl border border-slate-200 bg-white text-slate-700 text-xs font-semibold text-center transition flex flex-col items-center">
+                            <span class="text-base mb-1">💬</span>
+                            <span>Chatbot</span>
+                        </button>
+                        <button id="chan-IntegratedPortal" onclick="App.setChannel('Integrated Portal')" class="channel-btn p-2.5 rounded-xl border border-slate-200 bg-white text-slate-700 text-xs font-semibold text-center transition flex flex-col items-center">
+                            <span class="text-base mb-1">🌐</span>
+                            <span>Portal Form</span>
+                        </button>
+                        <button id="chan-MobileApplication" onclick="App.setChannel('Mobile Application')" class="channel-btn p-2.5 rounded-xl border border-slate-200 bg-white text-slate-700 text-xs font-semibold text-center transition flex flex-col items-center">
+                            <span class="text-base mb-1">📱</span>
+                            <span>Mobile App</span>
+                        </button>
+                        <button id="chan-IVRS" onclick="App.setChannel('IVRS')" class="channel-btn p-2.5 rounded-xl border border-slate-200 bg-white text-slate-700 text-xs font-semibold text-center transition flex flex-col items-center">
+                            <span class="text-base mb-1">🔢</span>
+                            <span>IVRS</span>
+                        </button>
+                        <button id="chan-TextComplaint" onclick="App.setChannel('Text Complaint')" class="channel-btn p-2.5 rounded-xl border border-slate-200 bg-white text-slate-700 text-xs font-semibold text-center transition flex flex-col items-center">
+                            <span class="text-base mb-1">📝</span>
+                            <span>Text Form</span>
+                        </button>
+                        <button id="chan-VoiceRecordingUpload" onclick="App.setChannel('Voice Recording Upload')" class="channel-btn p-2.5 rounded-xl border border-slate-200 bg-white text-slate-700 text-xs font-semibold text-center transition flex flex-col items-center">
+                            <span class="text-base mb-1">🎙️</span>
+                            <span>Upload Audio</span>
+                        </button>
+                    </div>
+
+                    <!-- Audio Recorder & Waveform Section (Section 3.A) -->
+                    <div id="voiceRecorderContainer" class="mt-5 p-4 rounded-xl bg-slate-900 text-white">
+                        <div class="flex items-center justify-between mb-3">
+                            <div class="flex items-center space-x-2">
+                                <span class="w-3 h-3 rounded-full bg-rose-500 animate-ping"></span>
+                                <span class="text-xs font-bold text-slate-200 uppercase tracking-wide">Live Speech & Prosody Analysis Stream</span>
+                            </div>
+                            <div class="text-xs font-mono font-bold text-teal-400 bg-slate-800 px-2.5 py-1 rounded">
+                                Duration: <span id="recordDurationTimer">00:24</span>
+                            </div>
+                        </div>
+
+                        <!-- Canvas Waveform -->
+                        <canvas id="waveformCanvas" width="700" height="90" class="w-full h-24 mb-3"></canvas>
+
+                        <div class="flex flex-wrap items-center justify-between gap-3 text-xs">
+                            <div class="flex items-center space-x-3">
+                                <button id="recordVoiceBtn" onclick="App.toggleRecording()" class="px-4 py-2 rounded-lg bg-teal-600 hover:bg-teal-700 text-white font-bold flex items-center transition shadow">
+                                    <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path></svg>
+                                    <span data-i18n="recordVoice">Record Voice</span>
+                                </button>
+                                <span id="recordingStatusText" class="text-slate-400 text-[11px]">
+                                    Click to capture spoken audio or speak directly into microphone.
+                                </span>
+                            </div>
+                            <div class="text-[11px] text-slate-400">
+                                Feature tracking: Pauses, Pitch jitter, Speech rate, Emotional distress
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Narrative Input Text Area -->
+                    <div class="mt-5">
+                        <label class="block text-xs font-bold text-slate-700 mb-1.5">
+                            Speech-to-Text Transcript / Narrative Description:
+                        </label>
+                        <textarea id="victimTextInput" rows="4" data-i18n-placeholder="inputPlaceholder" class="w-full p-3.5 border border-slate-300 rounded-xl text-xs text-slate-800 leading-relaxed focus:ring-2 focus:ring-teal-500 focus:outline-none font-sans" placeholder="Describe what occurred, threats faced, or the help you need..."></textarea>
+                    </div>
+
+                    <!-- Action Controls -->
+                    <div class="mt-4 flex flex-wrap items-center justify-between gap-3">
+                        <div class="flex items-center space-x-2">
+                            <button onclick="App.clearVictimForm()" class="px-3 py-2 rounded-lg border border-slate-300 text-slate-600 hover:bg-slate-100 text-xs font-medium transition" data-i18n="clearChat">
+                                Clear Conversation
+                            </button>
+                            <button onclick="App.quickExitToSafePage()" class="px-3 py-2 rounded-lg border border-slate-300 text-slate-600 hover:bg-slate-100 text-xs font-medium transition flex items-center space-x-1" title="Immediate exit to neutral screen">
+                                <span>🔒 Quick Exit</span>
+                            </button>
+                        </div>
+                        <div class="flex items-center space-x-3">
+                            <div id="assessmentLoadingSpinner" class="hidden flex items-center space-x-1 text-xs text-teal-700">
+                                <svg class="animate-spin h-4 w-4 text-teal-600" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path></svg>
+                                <span>Evaluating SVI...</span>
+                            </div>
+                            <button onclick="App.runInteractiveAssessment()" class="px-5 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-md transition flex items-center space-x-2">
+                                <span>Run AI Assessment</span>
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- REAL-TIME SVI ASSESSMENT RESULT PREVIEW (Section 4 & 5) -->
+                <div id="sviAssessmentPreview" class="hidden bg-white p-6 rounded-2xl border border-teal-300 shadow-lg mb-8">
+                    <!-- Critical Alert Banner if High/Critical -->
+                    <div id="previewUrgentBanner" class="hidden p-3.5 mb-5 rounded-xl bg-rose-50 border border-rose-300 text-rose-900 text-xs flex items-center justify-between pulse-emergency">
+                        <div class="flex items-center space-x-2">
+                            <span class="w-3 h-3 bg-rose-600 rounded-full animate-ping"></span>
+                            <span class="font-bold text-sm" data-i18n="urgentReview">URGENT HUMAN REVIEW REQUIRED</span>
+                        </div>
+                        <span class="text-xs bg-rose-600 text-white px-2 py-0.5 rounded font-semibold">Priority Triage Flagged</span>
+                    </div>
+
+                    <!-- Score Header -->
+                    <div class="flex flex-wrap items-center justify-between pb-5 border-b border-slate-200 gap-4">
+                        <div>
+                            <span class="text-[11px] font-bold text-slate-500 uppercase tracking-wider" data-i18n="sviScore">STRESS VULNERABILITY INDEX</span>
+                            <div class="flex items-baseline space-x-3 mt-1">
+                                <span id="previewSviScore" class="text-3xl font-black text-slate-900">82 / 100</span>
+                                <span id="previewRiskLevel" class="px-3 py-1 rounded-full text-xs font-bold bg-orange-100 text-orange-800 border border-orange-300">HIGH</span>
+                            </div>
+                        </div>
+                        <div class="max-w-md text-right">
+                            <span class="text-[11px] text-slate-500 font-medium">Model Calibration:</span>
+                            <div class="text-xs font-semibold text-slate-700">Multi-prosodic & Indic NLP Triage Model v3</div>
+                        </div>
+                    </div>
+
+                    <!-- Summary & Emotion Radar Grid -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 my-5">
+                        <div>
+                            <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wide mb-2">Triage Summary:</h4>
+                            <p id="previewSummaryText" class="text-xs text-slate-700 leading-relaxed bg-slate-50 p-3.5 rounded-xl border border-slate-200">
+                                Narrative indicates acute trauma, intense fear arousal, and active threats around residence.
+                            </p>
+
+                            <!-- Explainability "Why this score?" accordion -->
+                            <div class="mt-4">
+                                <h4 class="text-xs font-bold text-teal-800 flex items-center space-x-1 mb-2">
+                                    <span data-i18n="whyScore">Why this score? (Explainable AI Factors)</span>
+                                </h4>
+                                <div id="previewFactorsContainer" class="space-y-2 max-h-48 overflow-y-auto pr-1"></div>
+                            </div>
+                        </div>
+
+                        <!-- Emotion Radar Chart -->
+                        <div class="bg-slate-50 p-4 rounded-xl border border-slate-200 flex flex-col items-center">
+                            <span class="text-xs font-bold text-slate-700 mb-1">Emotion Arousal Profile</span>
+                            <div class="w-full h-56">
+                                <canvas id="previewEmotionChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Disclaimer & Formal Submission -->
+                    <div class="pt-4 border-t border-slate-200 flex flex-wrap items-center justify-between gap-4">
+                        <p class="text-[11px] text-slate-500 max-w-lg leading-relaxed" data-i18n="disclaimer">
+                            AI-assisted triage indicator. Not a medical or clinical diagnosis. Escalated to authorized human professionals.
+                        </p>
+                        <button id="submitCaseBtn" onclick="App.submitVictimCase()" class="px-6 py-3 rounded-xl bg-teal-700 hover:bg-teal-800 text-white font-extrabold text-xs shadow-md transition flex items-center space-x-2">
+                            <span>Forward Case to Authorized Officer</span>
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Victim Dashboard Tab (Post Submission Dossier) (Section 9) -->
+            <div id="victimDashboardSection" class="hidden bg-white p-6 sm:p-8 rounded-2xl border border-slate-200 shadow-md">
+                <div class="flex flex-wrap items-center justify-between pb-4 border-b border-slate-200 gap-3">
+                    <div>
+                        <span class="text-xs font-bold text-teal-700 uppercase tracking-wide">VICTIM GRIEVANCE STATUS</span>
+                        <h3 class="text-xl font-black text-slate-900 mt-1 flex items-center space-x-2">
+                            <span>Case ID:</span>
+                            <span id="vdCaseNumber" class="text-teal-800 font-mono">NHAA-1024</span>
+                        </h3>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <span id="vdSviBadge" class="px-3 py-1 rounded-full text-xs font-bold bg-orange-100 text-orange-800 border border-orange-300">
+                            SVI: 82/100 (HIGH)
+                        </span>
+                        <button onclick="App.returnToComplaintForm()" class="px-3 py-1.5 rounded-lg border border-slate-300 text-xs font-semibold text-slate-700 hover:bg-slate-100">
+                            New Submission
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Case Details Summary -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 py-4 border-b border-slate-100 text-xs">
+                    <div>
+                        <span class="text-slate-500">Date Registered:</span>
+                        <div id="vdDate" class="font-semibold text-slate-800">Today</div>
+                    </div>
+                    <div>
+                        <span class="text-slate-500">Status:</span>
+                        <div id="vdStatus" class="font-bold text-teal-700">Under Review</div>
+                    </div>
+                    <div>
+                        <span class="text-slate-500">Language:</span>
+                        <div id="vdLanguage" class="font-semibold text-slate-800">Telugu</div>
+                    </div>
+                    <div>
+                        <span class="text-slate-500">Intake Channel:</span>
+                        <div id="vdChannel" class="font-semibold text-slate-800">Voice Helpline</div>
+                    </div>
+                </div>
+
+                <!-- 7-Stage Case Progress Timeline (Section 9) -->
+                <div class="mt-6">
+                    <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wide mb-4">Official Case Journey Timeline</h4>
+                    <div id="vdTimelineList" class="space-y-1"></div>
+                </div>
+
+                <!-- Help & Safety Callout -->
+                <div class="mt-8 p-4 rounded-xl bg-teal-50 border border-teal-200 text-xs text-teal-900 flex items-center justify-between">
+                    <div>
+                        <strong class="font-bold">Need Immediate Protection or Police Escort?</strong>
+                        <div class="text-teal-700 mt-0.5">Call National Atrocity Toll-Free 14566 or Police Control 112 directly. Counselors are available 24x7.</div>
+                    </div>
+                    <button onclick="App.triggerEmergencySOS()" class="px-3 py-1.5 rounded-lg bg-teal-700 text-white font-bold text-xs hover:bg-teal-800 whitespace-nowrap">
+                        Call Emergency
+                    </button>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- ================================================================= -->
+        <!-- VIEW 3: AUTHORIZED PROFESSIONAL DASHBOARD -->
+        <!-- ================================================================= -->
+        <section id="officer-view" class="view-section hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <!-- Header & Role Info -->
+            <div class="flex flex-wrap items-center justify-between pb-6 border-b border-slate-200 gap-4">
+                <div>
+                    <span class="text-xs font-bold text-teal-700 uppercase tracking-wider">RESTRICTED GOVERNMENT PORTAL</span>
+                    <h2 class="text-2xl font-black text-slate-900 mt-1">Authorized Officer Triage Console</h2>
+                    <p class="text-xs text-slate-500 mt-0.5">Active Session: <strong id="currentUserName">Officer Rajesh Kumar</strong> • District Atrocity Protection Unit</p>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <button onclick="App.fetchCases()" class="px-3.5 py-2 rounded-lg bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 text-xs font-semibold shadow-sm transition flex items-center space-x-1.5">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                        <span>Refresh Cases</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- KPI Metric Cards (Section 10) -->
+            <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4 my-6">
+                <!-- Card 1 -->
+                <div class="p-4 rounded-xl border border-slate-200 bg-white shadow-sm">
+                    <span class="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">TOTAL CASES</span>
+                    <div id="kpiTotalCases" class="text-2xl font-black text-slate-900 mt-1">--</div>
+                    <span class="text-[10px] text-teal-700 font-medium mt-1 inline-block">All intake channels</span>
+                </div>
+                <!-- Card 2 -->
+                <div class="p-4 rounded-xl border border-orange-200 bg-orange-50/50 shadow-sm">
+                    <span class="text-[11px] font-semibold text-orange-700 uppercase tracking-wide">HIGH RISK</span>
+                    <div id="kpiHighRisk" class="text-2xl font-black text-orange-900 mt-1">--</div>
+                    <span class="text-[10px] text-orange-700 font-medium mt-1 inline-block">SVI: 66 - 84</span>
+                </div>
+                <!-- Card 3 -->
+                <div class="p-4 rounded-xl border border-rose-200 bg-rose-50/60 shadow-sm">
+                    <span class="text-[11px] font-semibold text-rose-700 uppercase tracking-wide flex items-center space-x-1">
+                        <span class="w-2 h-2 rounded-full bg-rose-600 animate-ping"></span>
+                        <span>CRITICAL</span>
+                    </span>
+                    <div id="kpiCritical" class="text-2xl font-black text-rose-900 mt-1">--</div>
+                    <span class="text-[10px] text-rose-700 font-bold mt-1 inline-block">Immediate Action Required</span>
+                </div>
+                <!-- Card 4 -->
+                <div class="p-4 rounded-xl border border-slate-200 bg-white shadow-sm">
+                    <span class="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">PENDING REVIEW</span>
+                    <div id="kpiPendingReview" class="text-2xl font-black text-slate-900 mt-1">--</div>
+                    <span class="text-[10px] text-slate-500 font-medium mt-1 inline-block">Human review queue</span>
+                </div>
+                <!-- Card 5 -->
+                <div class="p-4 rounded-xl border border-slate-200 bg-white shadow-sm">
+                    <span class="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">FOLLOW-UPS TODAY</span>
+                    <div class="text-2xl font-black text-teal-800 mt-1">3</div>
+                    <span class="text-[10px] text-emerald-700 font-medium mt-1 inline-block">1 Completed</span>
+                </div>
+            </div>
+
+            <!-- Filters Bar (Section 10) -->
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm mb-6 flex flex-wrap items-center justify-between gap-3 text-xs">
+                <div class="flex flex-wrap items-center gap-3">
+                    <!-- Search -->
+                    <div class="relative w-64">
+                        <input id="searchCasesInput" oninput="App.fetchCases()" type="text" placeholder="Search Case ID or District..." class="w-full pl-8 pr-3 py-1.5 rounded-lg border border-slate-300 text-xs focus:ring-1 focus:ring-teal-500 focus:outline-none">
+                        <svg class="w-4 h-4 text-slate-400 absolute left-2.5 top-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                    </div>
+
+                    <!-- Risk Filter -->
+                    <select id="filterRisk" onchange="App.fetchCases()" class="border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs bg-white text-slate-700 focus:outline-none">
+                        <option value="ALL">All Risk Levels</option>
+                        <option value="CRITICAL">🔴 Critical</option>
+                        <option value="HIGH">🟠 High</option>
+                        <option value="MODERATE">🟡 Moderate</option>
+                        <option value="LOW">🟢 Low</option>
+                    </select>
+
+                    <!-- Language Filter -->
+                    <select id="filterLanguage" onchange="App.fetchCases()" class="border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs bg-white text-slate-700 focus:outline-none">
+                        <option value="ALL">All Languages</option>
+                        <option value="Telugu">Telugu</option>
+                        <option value="Hindi">Hindi</option>
+                        <option value="Tamil">Tamil</option>
+                        <option value="Kannada">Kannada</option>
+                        <option value="Marathi">Marathi</option>
+                        <option value="English">English</option>
+                    </select>
+
+                    <!-- Channel Filter -->
+                    <select id="filterChannel" onchange="App.fetchCases()" class="border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs bg-white text-slate-700 focus:outline-none">
+                        <option value="ALL">All Channels</option>
+                        <option value="Voice Helpline">Voice Helpline</option>
+                        <option value="Chatbot">Chatbot</option>
+                        <option value="Integrated Portal">Integrated Portal</option>
+                        <option value="IVRS">IVRS</option>
+                        <option value="Mobile Application">Mobile Application</option>
+                    </select>
+
+                    <!-- Status Filter -->
+                    <select id="filterStatus" onchange="App.fetchCases()" class="border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs bg-white text-slate-700 focus:outline-none">
+                        <option value="ALL">All Statuses</option>
+                        <option value="Pending">Pending</option>
+                        <option value="Under Review">Under Review</option>
+                        <option value="Assigned">Assigned</option>
+                        <option value="Resolved">Resolved</option>
+                    </select>
+                </div>
+
+                <div class="text-xs text-slate-500 font-medium">
+                    Showing <span id="casesCountDisplay">filtered</span> cases
+                </div>
+            </div>
+
+            <!-- Case Table (Section 10) -->
+            <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-600 uppercase tracking-wider">
+                                <th class="py-3 px-4">Case ID</th>
+                                <th class="py-3 px-4">Date</th>
+                                <th class="py-3 px-4">Language</th>
+                                <th class="py-3 px-4">Channel</th>
+                                <th class="py-3 px-4">SVI Score</th>
+                                <th class="py-3 px-4">Risk Tier</th>
+                                <th class="py-3 px-4">Status</th>
+                                <th class="py-3 px-4">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="casesTableBody" class="divide-y divide-slate-100">
+                            <!-- Populated dynamically via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================================================================= -->
+        <!-- VIEW 4: CASE DETAILS & DEEP TRIAGE DOSSIER -->
+        <!-- ================================================================= -->
+        <section id="case-details-view" class="view-section hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            
+            <!-- Breadcrumb Navigation -->
+            <div class="flex items-center space-x-2 text-xs text-slate-500 mb-4">
+                <button onclick="App.switchTab('officer-view')" class="text-teal-700 hover:underline">← Back to Cases List</button>
+                <span>/</span>
+                <span class="text-slate-800 font-semibold">Case Dossier</span>
+            </div>
+
+            <!-- Critical Safety Alert Banner (Section 5, 24) -->
+            <div id="cdEmergencyBanner" class="hidden p-4 rounded-xl bg-rose-600 text-white shadow-lg mb-6 flex flex-wrap items-center justify-between gap-4 pulse-emergency">
+                <div>
+                    <div class="text-xs font-black tracking-wider uppercase flex items-center space-x-2">
+                        <span class="w-3 h-3 bg-white rounded-full animate-ping"></span>
+                        <span>CRITICAL SAFETY ALERT — IMMEDIATE HUMAN INTERVENTION REQUIRED</span>
+                    </div>
+                    <div class="text-xs text-rose-100 mt-1">Severe threat to life, nocturnal stalking, or imminent physical danger detected in narrative.</div>
+                </div>
+                <!-- Simulated Action Buttons -->
+                <div class="flex flex-wrap items-center gap-2">
+                    <button onclick="App.triggerCaseEmergencyAction('NOTIFY_AUTHORIZED_OFFICER')" class="px-3 py-1.5 rounded-lg bg-white text-rose-800 font-bold text-xs hover:bg-rose-50 shadow-sm">
+                        Notify Nodal Officer
+                    </button>
+                    <button onclick="App.triggerCaseEmergencyAction('REQUEST_COUNSELLOR')" class="px-3 py-1.5 rounded-lg bg-rose-800 text-white font-bold text-xs hover:bg-rose-900 border border-rose-400 shadow-sm">
+                        Dispatch Trauma Specialist
+                    </button>
+                    <button onclick="App.triggerCaseEmergencyAction('REQUEST_MEDICAL')" class="px-3 py-1.5 rounded-lg bg-rose-800 text-white font-bold text-xs hover:bg-rose-900 border border-rose-400 shadow-sm">
+                        Medical Alert
+                    </button>
+                    <button onclick="App.triggerCaseEmergencyAction('INITIATE_PROTECTION')" class="px-3 py-1.5 rounded-lg bg-rose-800 text-white font-bold text-xs hover:bg-rose-900 border border-rose-400 shadow-sm">
+                        Initiate Police Escort
+                    </button>
+                </div>
+            </div>
+
+            <!-- Dossier Header Card (Section 11) -->
+            <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm mb-6">
+                <div class="flex flex-wrap items-center justify-between gap-4 pb-5 border-b border-slate-200">
+                    <div>
+                        <div class="flex items-center space-x-3">
+                            <h2 class="text-2xl font-black text-slate-900 font-mono tracking-tight" id="cdCaseNumber">NHAA-1024</h2>
+                            <span id="cdRiskBadge" class="px-3 py-1 rounded-full text-xs font-bold bg-orange-100 text-orange-800 border border-orange-300">HIGH</span>
+                            <span id="cdConfidenceBadge" class="text-xs bg-slate-100 text-slate-700 px-2.5 py-1 rounded font-mono font-medium">AI Confidence: 89%</span>
+                        </div>
+                        <div class="text-xs text-slate-500 mt-1">
+                            Logged: <span id="cdDate" class="font-medium text-slate-700">Today</span> • Complainant: <span id="cdComplainantAlias" class="font-mono text-slate-700">Complainant-TL-4819</span> (Anonymized)
+                        </div>
+                    </div>
+
+                    <!-- SVI Metric Display -->
+                    <div class="flex items-center space-x-6 text-right">
+                        <div>
+                            <span class="text-[11px] font-semibold text-slate-500 uppercase tracking-wide">STRESS VULNERABILITY INDEX</span>
+                            <div id="cdSviScore" class="text-3xl font-black text-teal-800">82 / 100</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Secondary Metadata Strip -->
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 pt-4 text-xs">
+                    <div>
+                        <span class="text-slate-500">Input Channel:</span>
+                        <div id="cdChannel" class="font-bold text-slate-800">Voice Helpline</div>
+                    </div>
+                    <div>
+                        <span class="text-slate-500">Language Detected:</span>
+                        <div id="cdLanguage" class="font-bold text-slate-800">Telugu</div>
+                    </div>
+                    <div>
+                        <span class="text-slate-500">Jurisdiction:</span>
+                        <div id="cdDistrict" class="font-bold text-slate-800">Rangareddy, Telangana</div>
+                    </div>
+                    <div>
+                        <span class="text-slate-500">Consent Recorded:</span>
+                        <div class="font-bold text-emerald-700">✓ Formally Verified</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Deep Triage Analytics Grid (Section 11) -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                <!-- Emotion Radar Card -->
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                    <div>
+                        <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wide">Emotional Indicators Arousal Model</h3>
+                        <p class="text-[11px] text-slate-500 mt-0.5">Multidimensional affective signals mapped against baseline normative range.</p>
+                    </div>
+                    <div class="w-full h-64 mt-4">
+                        <canvas id="cdEmotionRadarChart"></canvas>
+                    </div>
+                    <div class="mt-3 text-[11px] text-slate-500 italic text-center">
+                        Dominant Affective Signal: <strong>Fear (86%) & Acute Distress (79%)</strong>
+                    </div>
+                </div>
+
+                <!-- Speech Prosody Bar Card -->
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                    <div>
+                        <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wide">Acoustic Prosody & Hesitation Indicators</h3>
+                        <p class="text-[11px] text-slate-500 mt-0.5">Biometric speech metrics extracted from telephone audio stream.</p>
+                    </div>
+                    <div class="w-full h-64 mt-4">
+                        <canvas id="cdSpeechBarChart"></canvas>
+                    </div>
+                    <div class="mt-3 text-[11px] text-slate-500 italic text-center">
+                        Key finding: <strong>6 Extended Pauses (avg 3.2s) & Pitch Jitter 48.5 Hz (Acoustic Tremor)</strong>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Explainable AI Panel (Section 4, 11) -->
+            <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm mb-6">
+                <div class="flex items-center justify-between pb-3 border-b border-slate-200">
+                    <div>
+                        <h3 class="text-sm font-bold text-slate-900 flex items-center space-x-2">
+                            <span>🔍 Why this Assessment? (Explainable AI Factors)</span>
+                        </h3>
+                        <p class="text-xs text-slate-500 mt-0.5">Transparent factor decomposition detailing exact indicators that influenced SVI calculation.</p>
+                    </div>
+                    <span class="text-xs font-bold text-teal-700 bg-teal-50 px-2.5 py-1 rounded">5 Key Contributing Factors</span>
+                </div>
+
+                <!-- Expandable Factor Cards -->
+                <div id="cdExplainabilityCards" class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4"></div>
+            </div>
+
+            <!-- AI Insight & Sensitive Evidence Panel (Section 13, 20) -->
+            <div class="bg-gradient-to-r from-slate-900 to-teal-950 text-white p-6 rounded-2xl shadow-sm mb-6 flex flex-wrap items-center justify-between gap-4">
+                <div class="max-w-2xl">
+                    <span class="text-[11px] font-bold text-teal-400 uppercase tracking-wider">OFFICER TRIAGE SYNTHESIS</span>
+                    <h4 class="text-base font-bold mt-1">Multi-modal AI Diagnostic Summary</h4>
+                    <p class="text-xs text-slate-300 mt-1 leading-relaxed">
+                        “Interaction contains multiple concurrent indicators of acute emotional trauma, severe fear, and nocturnal intimidation. Threat-related vocabulary was matched across 4 distinct instances. High pitch jitter and speech pauses substantiate heightened autonomic arousal. Immediate human review and allocation of psychological stabilization + legal aid counsel recommended.”
+                    </p>
+                </div>
+                <button onclick="App.openEvidenceModal()" class="px-4 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow transition flex items-center space-x-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                    <span>View Evidence (PII Masked)</span>
+                </button>
+            </div>
+
+            <!-- Recommended Support Services & Human-in-the-Loop Actions (Section 11, 22) -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Support Services Allocation (2 Cols) -->
+                <div class="lg:col-span-2 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                    <div class="flex items-center justify-between pb-3 border-b border-slate-200">
+                        <div>
+                            <h3 class="text-sm font-bold text-slate-900">Recommended Support Pathways</h3>
+                            <p class="text-xs text-slate-500 mt-0.5">Human-in-the-loop requirement: Every action requires authorized officer confirmation.</p>
+                        </div>
+                        <span class="text-xs bg-slate-100 text-slate-700 px-2 py-0.5 rounded font-medium">Statutory Aid Allocation</span>
+                    </div>
+
+                    <!-- Recommendations List -->
+                    <div id="cdRecommendationsList" class="space-y-3 mt-4"></div>
+                </div>
+
+                <!-- Case Chronological Timeline (1 Col) (Section 12) -->
+                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between pb-3 border-b border-slate-200 mb-4">
+                            <h3 class="text-sm font-bold text-slate-900">Chronological Timeline</h3>
+                            <span class="text-xs text-slate-500">Live Audit Trail</span>
+                        </div>
+                        <div id="cdTimelineContainer" class="space-y-1"></div>
+                    </div>
+                    <div class="pt-4 border-t border-slate-200 mt-4">
+                        <button onclick="App.openNewFollowupModal()" class="w-full py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold text-xs transition">
+                            + Schedule Follow-up Session
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- ================================================================= -->
+        <!-- VIEW 5: FOLLOW-UP MANAGEMENT SYSTEM -->
+        <!-- ================================================================= -->
+        <section id="followups-view" class="view-section hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div class="flex flex-wrap items-center justify-between pb-6 border-b border-slate-200 gap-4">
+                <div>
+                    <span class="text-xs font-bold text-teal-700 uppercase tracking-wider">LONGITUDINAL TRAUMA MONITORING</span>
+                    <h2 class="text-2xl font-black text-slate-900 mt-1">Follow-Up & Vulnerability Tracking</h2>
+                    <p class="text-xs text-slate-500 mt-0.5">Track changes in victim distress indicators across repeated support sessions.</p>
+                </div>
+                <button onclick="App.openNewFollowupModal()" class="px-4 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow transition">
+                    + Schedule New Follow-up
+                </button>
+            </div>
+
+            <!-- Vulnerability Progression Over Time (Section 31.5) -->
+            <div id="vulnerabilityTimelineCard" class="hidden bg-white p-6 rounded-2xl border border-slate-200 shadow-sm my-6">
+                <div class="flex items-center justify-between pb-3 border-b border-slate-200">
+                    <div>
+                        <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wide">
+                            Vulnerability Timeline — SVI Trauma Progression Tracking
+                        </h3>
+                        <p class="text-xs text-slate-500 mt-0.5">Monitoring Case <span id="vulnCaseNum" class="font-mono font-bold text-teal-700">NHAA-1024</span> across contact cycles.</p>
+                    </div>
+                    <span class="text-xs text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded font-bold">Trend: Distress Decreasing</span>
+                </div>
+                <div class="w-full h-56 mt-4">
+                    <canvas id="followupVulnerabilityChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Follow-up Tabs -->
+            <div class="flex items-center space-x-2 my-4 border-b border-slate-200 text-xs font-semibold">
+                <button onclick="App.fetchFollowups('ALL')" class="px-4 py-2 border-b-2 border-teal-600 text-teal-800">All Follow-ups</button>
+                <button onclick="App.fetchFollowups('Upcoming')" class="px-4 py-2 text-slate-600 hover:text-slate-900">Upcoming</button>
+                <button onclick="App.fetchFollowups('Overdue')" class="px-4 py-2 text-slate-600 hover:text-slate-900">Overdue</button>
+                <button onclick="App.fetchFollowups('Completed')" class="px-4 py-2 text-slate-600 hover:text-slate-900">Completed</button>
+            </div>
+
+            <!-- Follow-up List Container -->
+            <div id="followupsContainer" class="space-y-3"></div>
+        </section>
+
+        <!-- ================================================================= -->
+        <!-- VIEW 6: SUPPORT RESOURCE DIRECTORY -->
+        <!-- ================================================================= -->
+        <section id="resources-view" class="view-section hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div class="flex flex-wrap items-center justify-between pb-6 border-b border-slate-200 gap-4">
+                <div>
+                    <span class="text-xs font-bold text-teal-700 uppercase tracking-wider">INTER-AGENCY DIRECTORY</span>
+                    <h2 class="text-2xl font-black text-slate-900 mt-1">Verified Support Resource Directory</h2>
+                    <p class="text-xs text-slate-500 mt-0.5">Locate verified psychological trauma cells, legal defense counsel, and protection shelters across India.</p>
+                </div>
+            </div>
+
+            <!-- Search & Filters -->
+            <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm my-6 flex flex-wrap items-center justify-between gap-3 text-xs">
+                <div class="flex flex-wrap items-center gap-3">
+                    <select id="resFilterState" onchange="App.fetchResources()" class="border border-slate-300 rounded-lg px-3 py-1.5 bg-white text-slate-700">
+                        <option value="ALL">All States / National</option>
+                        <option value="Telangana">Telangana</option>
+                        <option value="Andhra Pradesh">Andhra Pradesh</option>
+                        <option value="Karnataka">Karnataka</option>
+                        <option value="Maharashtra">Maharashtra</option>
+                    </select>
+
+                    <select id="resFilterCategory" onchange="App.fetchResources()" class="border border-slate-300 rounded-lg px-3 py-1.5 bg-white text-slate-700">
+                        <option value="ALL">All Service Categories</option>
+                        <option value="Counselling">Counselling / Mental Health</option>
+                        <option value="Legal Aid">Legal Aid Defense</option>
+                        <option value="Police Support">Police Support / Nodal Cell</option>
+                        <option value="Witness Protection">Witness Protection</option>
+                        <option value="Emergency Support">Emergency Crisis Shelter</option>
+                        <option value="Medical Assistance">Medical / Trauma ICU</option>
+                        <option value="Rehabilitation & Welfare">Rehabilitation & Welfare</option>
+                    </select>
+
+                    <select id="resFilterLanguage" onchange="App.fetchResources()" class="border border-slate-300 rounded-lg px-3 py-1.5 bg-white text-slate-700">
+                        <option value="ALL">All Supported Languages</option>
+                        <option value="Telugu">Telugu</option>
+                        <option value="Hindi">Hindi</option>
+                        <option value="Tamil">Tamil</option>
+                        <option value="Kannada">Kannada</option>
+                        <option value="English">English</option>
+                    </select>
+
+                    <label class="flex items-center space-x-1.5 text-xs text-slate-700 cursor-pointer">
+                        <input id="resFilter24x7" onchange="App.fetchResources()" type="checkbox" class="rounded text-teal-600 focus:ring-teal-500">
+                        <span>24x7 Active Only</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Resource Cards Grid -->
+            <div id="resourcesGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+        </section>
+
+        <!-- ================================================================= -->
+        <!-- VIEW 7: AGGREGATE ANALYTICS & TREND DETECTION -->
+        <!-- ================================================================= -->
+        <section id="analytics-view" class="view-section hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div class="flex flex-wrap items-center justify-between pb-6 border-b border-slate-200 gap-4">
+                <div>
+                    <span class="text-xs font-bold text-teal-700 uppercase tracking-wider">ANONYMIZED STATISTICAL INTELLIGENCE</span>
+                    <h2 class="text-2xl font-black text-slate-900 mt-1">Atrocity Triage Analytics & Early Warnings</h2>
+                    <p class="text-xs text-slate-500 mt-0.5">All statistics are aggregated and strictly de-identified. PII is never exposed.</p>
+                </div>
+            </div>
+
+            <!-- Early Warning / Trend Detection Alert Cards (Section 17, 31.10) -->
+            <div class="my-6">
+                <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wide mb-3 flex items-center space-x-2">
+                    <span>⚠️ Proactive Early Warning Signals (Algorithmic Cluster Detection)</span>
+                </h3>
+                <div id="earlyWarningAlertsList" class="grid grid-cols-1 md:grid-cols-2 gap-4"></div>
+            </div>
+
+            <!-- Analytics Metric Strip -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 my-6">
+                <div class="p-4 rounded-xl border border-slate-200 bg-white">
+                    <span class="text-[11px] text-slate-500 font-semibold uppercase">TOTAL CASES LOGGED</span>
+                    <div id="analyticsTotalCases" class="text-2xl font-black text-slate-900 mt-1">--</div>
+                </div>
+                <div class="p-4 rounded-xl border border-slate-200 bg-white">
+                    <span class="text-[11px] text-slate-500 font-semibold uppercase">AVERAGE SVI INDEX</span>
+                    <div id="analyticsAvgSvi" class="text-2xl font-black text-teal-800 mt-1">--</div>
+                </div>
+                <div class="p-4 rounded-xl border border-slate-200 bg-white">
+                    <span class="text-[11px] text-slate-500 font-semibold uppercase">AVERAGE RESPONSE TIME</span>
+                    <div class="text-2xl font-black text-slate-900 mt-1">11.4 min</div>
+                </div>
+                <div class="p-4 rounded-xl border border-slate-200 bg-white">
+                    <span class="text-[11px] text-slate-500 font-semibold uppercase">FOLLOW-UP COMPLETION</span>
+                    <div class="text-2xl font-black text-emerald-700 mt-1">92.8%</div>
+                </div>
+            </div>
+
+            <!-- Charts Grid (Section 16) -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Chart 1: Risk Distribution -->
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                    <div>
+                        <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wide">Cases by Risk Level Tier</h4>
+                        <p class="text-[11px] text-slate-500">Distribution across Low, Moderate, High, and Critical triage tiers.</p>
+                    </div>
+                    <div class="w-full h-64 mt-4">
+                        <canvas id="analyticsRiskDonutChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Chart 2: Channel Distribution -->
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                    <div>
+                        <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wide">Intake Channel Volume</h4>
+                        <p class="text-[11px] text-slate-500">Breakdown across Voice Helpline, Chatbot, Portal, IVRS, and Mobile.</p>
+                    </div>
+                    <div class="w-full h-64 mt-4">
+                        <canvas id="analyticsChannelChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Chart 3: Language Distribution -->
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                    <div>
+                        <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wide">Languages Communicated</h4>
+                        <p class="text-[11px] text-slate-500">Breakdown of victim preferred languages across all interactions.</p>
+                    </div>
+                    <div class="w-full h-64 mt-4">
+                        <canvas id="analyticsLanguageChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Chart 4: State-wise Distribution -->
+                <div class="bg-white p-5 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                    <div>
+                        <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wide">Geographic State Distribution</h4>
+                        <p class="text-[11px] text-slate-500">De-identified regional complaint concentrations.</p>
+                    </div>
+                    <div class="w-full h-64 mt-4">
+                        <canvas id="analyticsStateChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================================================================= -->
+        <!-- VIEW 8: ADMIN PANEL & AUDIT LOGS -->
+        <!-- ================================================================= -->
+        <section id="admin-view" class="view-section hidden max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div class="flex flex-wrap items-center justify-between pb-6 border-b border-slate-200 gap-4">
+                <div>
+                    <span class="text-xs font-bold text-teal-700 uppercase tracking-wider">SYSTEM ADMINISTRATION & GOVERNANCE</span>
+                    <h2 class="text-2xl font-black text-slate-900 mt-1">Triage Configuration & Audit Ledger</h2>
+                    <p class="text-xs text-slate-500 mt-0.5">Manage SVI calculation thresholds, model weights, and inspect statutory audit logs.</p>
+                </div>
+                <div class="flex items-center space-x-2">
+                    <button onclick="App.exportAuditLogsCSV()" class="px-3.5 py-2 rounded-lg bg-white border border-slate-300 text-slate-700 hover:bg-slate-50 text-xs font-semibold shadow-sm transition">
+                        📥 Export Audit Logs (CSV)
+                    </button>
+                    <button onclick="App.saveAdminConfig()" class="px-4 py-2 rounded-lg bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow transition">
+                        Save Configuration
+                    </button>
+                </div>
+            </div>
+
+            <!-- Health & Telemetry Strip -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 my-6 text-xs">
+                <div class="p-4 rounded-xl border border-slate-200 bg-white">
+                    <span class="text-slate-500 font-semibold">Service Health:</span>
+                    <div id="healthStatusText" class="font-bold text-emerald-700 mt-1">HEALTHY (99.98% Uptime)</div>
+                </div>
+                <div class="p-4 rounded-xl border border-slate-200 bg-white">
+                    <span class="text-slate-500 font-semibold">Queue Depth:</span>
+                    <div id="healthQueueText" class="font-bold text-slate-800 mt-1">2 Cases Pending Review</div>
+                </div>
+                <div class="p-4 rounded-xl border border-slate-200 bg-white">
+                    <span class="text-slate-500 font-semibold">Audit Ledger:</span>
+                    <div class="font-bold text-teal-700 mt-1">HMAC-SHA256 Cryptographic Chain</div>
+                </div>
+                <div class="p-4 rounded-xl border border-slate-200 bg-white">
+                    <span class="text-slate-500 font-semibold">Anonymization Engine:</span>
+                    <div class="font-bold text-slate-800 mt-1">Automated PII Masking Active</div>
+                </div>
+            </div>
+
+            <!-- Configurable SVI Risk Thresholds (Section 4, 26) -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                <!-- Thresholds -->
+                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                    <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wide mb-1">
+                        SVI Risk Categorization Boundaries (0-100)
+                    </h3>
+                    <p class="text-[11px] text-slate-500 mb-4">Thresholds can be calibrated by authorized administrators.</p>
+
+                    <div class="space-y-4 text-xs">
+                        <div>
+                            <div class="flex justify-between font-semibold mb-1">
+                                <span>🟢 Low Risk Max Threshold:</span>
+                                <span id="cfgValLow" class="font-mono text-teal-700">35</span>
+                            </div>
+                            <input id="cfgThresholdLow" type="range" min="10" max="45" value="35" oninput="document.getElementById('cfgValLow').textContent=this.value" class="w-full">
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between font-semibold mb-1">
+                                <span>🟡 Moderate Risk Max Threshold:</span>
+                                <span id="cfgValMod" class="font-mono text-amber-700">65</span>
+                            </div>
+                            <input id="cfgThresholdMod" type="range" min="46" max="75" value="65" oninput="document.getElementById('cfgValMod').textContent=this.value" class="w-full">
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between font-semibold mb-1">
+                                <span>🟠 High Risk Max Threshold:</span>
+                                <span id="cfgValHigh" class="font-mono text-orange-700">84</span>
+                            </div>
+                            <input id="cfgThresholdHigh" type="range" min="76" max="90" value="84" oninput="document.getElementById('cfgValHigh').textContent=this.value" class="w-full">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Simulation Model Weights -->
+                <div class="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm">
+                    <h3 class="text-xs font-bold text-slate-800 uppercase tracking-wide mb-1">
+                        Triage Assessment Model Weights
+                    </h3>
+                    <p class="text-[11px] text-slate-500 mb-4">Relative contribution of multimodal feature extractors.</p>
+
+                    <div class="space-y-4 text-xs">
+                        <div>
+                            <div class="flex justify-between font-semibold mb-1">
+                                <span>Multilingual NLP Severity Weight:</span>
+                                <span id="cfgValNlp" class="font-mono text-teal-700">0.45</span>
+                            </div>
+                            <input id="cfgNlpWeight" type="range" min="0.1" max="0.8" step="0.05" value="0.45" oninput="document.getElementById('cfgValNlp').textContent=this.value" class="w-full">
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between font-semibold mb-1">
+                                <span>Speech Prosody & Tremor Weight:</span>
+                                <span id="cfgValSpeech" class="font-mono text-teal-700">0.30</span>
+                            </div>
+                            <input id="cfgSpeechWeight" type="range" min="0.1" max="0.6" step="0.05" value="0.30" oninput="document.getElementById('cfgValSpeech').textContent=this.value" class="w-full">
+                        </div>
+
+                        <div>
+                            <div class="flex justify-between font-semibold mb-1">
+                                <span>Emotion Arousal Weight:</span>
+                                <span id="cfgValEmo" class="font-mono text-teal-700">0.25</span>
+                            </div>
+                            <input id="cfgEmotionWeight" type="range" min="0.1" max="0.5" step="0.05" value="0.25" oninput="document.getElementById('cfgValEmo').textContent=this.value" class="w-full">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Full Audit Log Table (Section 20) -->
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                <div class="p-4 border-b border-slate-200 flex flex-wrap items-center justify-between gap-3 text-xs">
+                    <div class="flex items-center space-x-2">
+                        <span class="font-bold text-slate-800 text-sm">Security & Access Audit Ledger</span>
+                        <span class="text-slate-400 font-mono text-[11px]">(Immutable)</span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <input id="searchAuditInput" oninput="App.fetchAuditLogs()" type="text" placeholder="Search user or action..." class="px-2.5 py-1 border border-slate-300 rounded text-xs focus:outline-none">
+                        <select id="filterAuditType" onchange="App.fetchAuditLogs()" class="border border-slate-300 rounded px-2 py-1 text-xs">
+                            <option value="ALL">All Types</option>
+                            <option value="READ">READ</option>
+                            <option value="WRITE">WRITE</option>
+                            <option value="ASSIGN">ASSIGN</option>
+                            <option value="ALERT">ALERT</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-600 uppercase tracking-wider">
+                                <th class="py-2.5 px-3">Timestamp</th>
+                                <th class="py-2.5 px-3">User</th>
+                                <th class="py-2.5 px-3">Role</th>
+                                <th class="py-2.5 px-3">Action</th>
+                                <th class="py-2.5 px-3">Case ID</th>
+                                <th class="py-2.5 px-3">Type</th>
+                                <th class="py-2.5 px-3">Details</th>
+                            </tr>
+                        </thead>
+                        <tbody id="auditTableBody" class="divide-y divide-slate-100 font-mono text-xs"></tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ================================================================= -->
+    <!-- MODALS -->
+    <!-- ================================================================= -->
+
+    <!-- 1. CONSENT MODAL (Section 8) -->
+    <div id="consentModal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200">
+            <div class="flex items-center space-x-3 mb-4">
+                <div class="w-10 h-10 rounded-full bg-teal-100 text-teal-800 flex items-center justify-center font-bold text-lg">
+                    🔒
+                </div>
+                <div>
+                    <h3 class="font-bold text-base text-slate-900" data-i18n="consentTitle">Sensitive Interaction Consent</h3>
+                    <p class="text-xs text-slate-500">Statutory Consent Protocol under Data Protection & SC/ST PoA Act Rules</p>
+                </div>
+            </div>
+
+            <div class="text-xs text-slate-600 space-y-2.5 leading-relaxed bg-slate-50 p-4 rounded-xl border border-slate-200 mb-5">
+                <p><strong>What is analyzed:</strong> Speech prosodic indicators (speech rate, pauses, vocal tremor) and narrative keywords (fear, threats, displacement, isolation).</p>
+                <p><strong>Why it is analyzed:</strong> Exclusively to prioritize your interaction and connect you faster with authorized counsellors, free legal defense, or emergency protection.</p>
+                <p><strong>Who accesses it:</strong> Only authorized nodal officers, verified DLSA legal aid counsel, and Tele-MANAS trauma psychologists.</p>
+                <p><strong>Protection Guarantee:</strong> End-to-end encryption in transit and at rest. Personally identifiable information is masked in analytics.</p>
+                <p><strong>Your Right:</strong> You have the unconditional right to decline AI assessment; your complaint will still be recorded and processed manually without prejudice.</p>
+            </div>
+
+            <div class="flex items-center justify-end space-x-3">
+                <button onclick="App.setConsent(false)" class="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 hover:bg-slate-100 font-semibold text-xs" data-i18n="declineBtn">
+                    I DO NOT CONSENT
+                </button>
+                <button onclick="App.setConsent(true)" class="px-5 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow-md" data-i18n="consentBtn">
+                    I CONSENT
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. EMERGENCY SOS MODAL (Section 24) -->
+    <div id="emergencyAlertModal" class="hidden fixed inset-0 z-50 bg-rose-950/80 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border-2 border-rose-500 text-center">
+            <div class="w-16 h-16 rounded-full bg-rose-100 text-rose-600 mx-auto flex items-center justify-center text-3xl font-black mb-3 animate-pulse">
+                🚨
+            </div>
+            <h3 class="text-lg font-black text-rose-900 uppercase">Emergency Help & Protection</h3>
+            <p class="text-xs text-slate-600 mt-2 leading-relaxed">
+                If you are in immediate physical danger, experiencing violence, or trapped, please contact the national emergency helplines immediately.
+            </p>
+
+            <div class="my-4 space-y-2 text-left">
+                <a href="tel:14566" class="block p-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-900 font-bold text-xs hover:bg-rose-100 flex items-center justify-between">
+                    <span>📞 National Atrocity Helpline</span>
+                    <span class="font-mono text-sm">14566 (24x7)</span>
+                </a>
+                <a href="tel:112" class="block p-3 rounded-xl bg-slate-50 border border-slate-200 text-slate-800 font-bold text-xs hover:bg-slate-100 flex items-center justify-between">
+                    <span>🚓 Emergency Response Support (Police)</span>
+                    <span class="font-mono text-sm">112</span>
+                </a>
+                <a href="tel:14416" class="block p-3 rounded-xl bg-teal-50 border border-teal-200 text-teal-900 font-bold text-xs hover:bg-teal-100 flex items-center justify-between">
+                    <span>🧠 Tele-MANAS Mental Health Distress</span>
+                    <span class="font-mono text-sm">14416</span>
+                </a>
+            </div>
+
+            <div class="flex items-center justify-center space-x-3 pt-2">
+                <button onclick="App.closeEmergencyModal()" class="px-4 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 text-slate-800 font-semibold text-xs">
+                    Close Dialog
+                </button>
+                <button onclick="App.quickExitToSafePage()" class="px-4 py-2 rounded-xl bg-slate-900 text-white font-bold text-xs hover:bg-black">
+                    🔒 Quick Safe Exit
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 3. SUPPORT ASSIGNMENT MODAL (Section 11, 22) -->
+    <div id="assignModal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200">
+            <h3 class="font-bold text-base text-slate-900">Assign Support Service</h3>
+            <p class="text-xs text-slate-500 mt-0.5">Service: <strong id="assignModalServiceTitle" class="text-teal-700">Counselling</strong></p>
+            <input type="hidden" id="assignRecId">
+
+            <div class="mt-4 space-y-3 text-xs">
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Select Professional / Unit:</label>
+                    <select id="assigneeSelect" class="w-full p-2.5 border border-slate-300 rounded-lg text-xs bg-white text-slate-800">
+                        <option value="Dr. S. Anuradha (Tele-MANAS Trauma Specialist)">Dr. S. Anuradha (Tele-MANAS Trauma Specialist)</option>
+                        <option value="Adv. K. Venkatesh (District Legal Services Authority)">Adv. K. Venkatesh (District Legal Services Authority)</option>
+                        <option value="Inspector V. K. Chauhan (Quick Response Team)">Inspector V. K. Chauhan (Quick Response Team)</option>
+                        <option value="District Welfare Officer (Social Welfare Dept)">District Welfare Officer (Social Welfare Dept)</option>
+                        <option value="Dr. N. Ramesh (Osmania General Hospital ICU)">Dr. N. Ramesh (Osmania General Hospital ICU)</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Officer Notes / Urgent Instructions:</label>
+                    <textarea id="assignNotesInput" rows="3" class="w-full p-2.5 border border-slate-300 rounded-lg text-xs" placeholder="Add specific urgency notes, immediate safety guidelines, or dispatch timeline..."></textarea>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-end space-x-2 mt-5">
+                <button onclick="App.closeAssignModal()" class="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 text-xs font-semibold hover:bg-slate-100">Cancel</button>
+                <button onclick="App.confirmAssignment()" class="px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow">Confirm & Dispatch</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4. SCHEDULE NEW FOLLOW-UP MODAL (Section 14) -->
+    <div id="newFollowupModal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200">
+            <h3 class="font-bold text-base text-slate-900">Schedule Follow-up Task</h3>
+            <p class="text-xs text-slate-500 mt-0.5">Maintain continuous trauma triage and security monitoring.</p>
+
+            <div class="mt-4 space-y-3 text-xs">
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Case Number:</label>
+                    <input id="folModalCaseNum" type="text" class="w-full p-2 border border-slate-300 rounded-lg font-mono text-xs" placeholder="e.g. NHAA-1024" value="NHAA-1024">
+                </div>
+
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Support Category:</label>
+                    <select id="folModalCategory" class="w-full p-2 border border-slate-300 rounded-lg text-xs bg-white text-slate-800">
+                        <option value="Counselling">Counselling / Mental Health</option>
+                        <option value="Legal Aid">Legal Aid Counsel</option>
+                        <option value="Medical Assistance">Medical Assistance</option>
+                        <option value="Police Support">Police Protection Verification</option>
+                        <option value="Witness Protection">Witness Protection Review</option>
+                        <option value="Rehabilitation & Welfare">Rehabilitation & Grant Disbursement</option>
+                    </select>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Date:</label>
+                        <input id="folModalDate" type="date" class="w-full p-2 border border-slate-300 rounded-lg text-xs" value="2026-09-30">
+                    </div>
+                    <div>
+                        <label class="block font-semibold text-slate-700 mb-1">Time:</label>
+                        <input id="folModalTime" type="time" class="w-full p-2 border border-slate-300 rounded-lg text-xs" value="11:00">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Assigned Specialist:</label>
+                    <input id="folModalAssignee" type="text" class="w-full p-2 border border-slate-300 rounded-lg text-xs" value="Dr. S. Anuradha (Tele-MANAS)">
+                </div>
+
+                <div>
+                    <label class="block font-semibold text-slate-700 mb-1">Objective / Notes:</label>
+                    <textarea id="folModalNotes" rows="2" class="w-full p-2 border border-slate-300 rounded-lg text-xs" placeholder="Follow-up goals, sleep assessment, legal draft review..."></textarea>
+                </div>
+            </div>
+
+            <div class="flex items-center justify-end space-x-2 mt-5">
+                <button onclick="App.closeNewFollowupModal()" class="px-4 py-2 rounded-xl border border-slate-300 text-slate-700 text-xs font-semibold hover:bg-slate-100">Cancel</button>
+                <button onclick="App.submitNewFollowup()" class="px-4 py-2 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs shadow">Save Schedule</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 5. SENSITIVE EVIDENCE & TRANSCRIPT VIEWER MODAL (Section 13, 20) -->
+    <div id="evidenceModal" class="hidden fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl max-w-2xl w-full p-6 shadow-2xl border border-slate-200">
+            <div class="flex items-center justify-between pb-3 border-b border-slate-200">
+                <div>
+                    <h3 class="font-bold text-sm text-slate-900">Restricted Evidence Inspection</h3>
+                    <p class="text-[11px] text-slate-500">Case <span id="evidenceCaseNum" class="font-mono text-teal-700 font-bold">NHAA-1024</span> • Language: <span id="evidenceLanguage">Telugu</span></p>
+                </div>
+                <span class="text-[10px] font-bold bg-amber-100 text-amber-900 px-2 py-0.5 rounded">STATUTORY PRIVILEGE</span>
+            </div>
+
+            <div class="mt-4 space-y-4 text-xs">
+                <div>
+                    <span class="font-bold text-slate-700 block mb-1">Anonymized Abstract (Standard Dashboard View):</span>
+                    <div id="evidenceMaskedNarrative" class="bg-slate-50 p-3 rounded-lg border border-slate-200 text-slate-700 leading-relaxed font-sans"></div>
+                </div>
+
+                <div>
+                    <span class="font-bold text-slate-700 block mb-1">Full Speech-to-Text Transcript (Decrypted under Officer Authorization):</span>
+                    <div id="evidenceRawTranscript" class="bg-slate-900 text-teal-200 p-4 rounded-xl font-mono text-xs leading-relaxed max-h-48 overflow-y-auto"></div>
+                </div>
+
+                <div class="p-3 rounded-lg bg-teal-50 border border-teal-200 text-[11px] text-teal-900">
+                    <strong>Audit Notice:</strong> This decryption event has been recorded in the immutable audit ledger with your user credentials, timestamp, and IP address.
+                </div>
+            </div>
+
+            <div class="flex items-center justify-end mt-5">
+                <button onclick="App.closeEvidenceModal()" class="px-4 py-2 rounded-xl bg-slate-800 text-white font-bold text-xs hover:bg-slate-900">
+                    Close Evidence Inspector
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION CONTAINER -->
+    <div id="appToast" class="hidden fixed top-5 right-5 z-50 px-4 py-2.5 rounded-lg text-xs font-semibold shadow-xl text-white"></div>
+
+    <!-- FOOTER -->
+    <footer class="bg-white border-t border-slate-200 py-6 px-4 sm:px-8 mt-auto text-xs text-slate-500">
+        <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
+            <div>
+                <strong class="text-slate-800">Sahaaya AI</strong> — Public Service Real-Time Stress & Trauma Assessment Platform
+                <div class="text-[11px] text-slate-400 mt-0.5">Designed as a victim-centric AI decision-support and triage system under national atrocity grievance frameworks.</div>
+            </div>
+            <div class="flex items-center space-x-4 text-[11px]">
+                <button onclick="App.showConsentModal()" class="hover:text-teal-700">Consent & Privacy</button>
+                <button onclick="App.switchTab('resources-view')" class="hover:text-teal-700">Support Centers</button>
+                <button onclick="App.switchTab('admin-view')" class="hover:text-teal-700">Audit Logs</button>
+                <span class="text-slate-400 font-mono">v2.4-prod</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- SCRIPTS -->
+    <script src="/static/js/i18n.js"></script>
+    <script src="/static/js/audio_sim.js"></script>
+    <script src="/static/js/charts.js"></script>
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
