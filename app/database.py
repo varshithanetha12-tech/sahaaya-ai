@@ -12,14 +12,19 @@ from app.services.demo_data_seeder import (
 from app.services.speech_analyzer import SpeechAnalyzerService
 from app.services.nlp_analyzer import NLPAnalyzerService
 from app.services.svi_engine import SVIEngineService
+import os
+import json
 from app.services.safety_triage import SafetyTriageService
+
+DATA_DIR = os.environ.get("DATA_DIR", os.path.join(os.path.dirname(__file__), "static", "data"))
+DB_FILE = os.path.join(DATA_DIR, "db_state.json")
 
 class DatabaseState:
     def __init__(self):
-        self.cases: List[CaseRecord] = build_demo_cases()
-        self.followups: List[FollowUpItem] = build_demo_followups()
-        self.notifications: List[NotificationItem] = build_demo_notifications()
-        self.audit_logs: List[AuditLogItem] = build_demo_audit_logs()
+        self.cases: List[CaseRecord] = []
+        self.followups: List[FollowUpItem] = []
+        self.notifications: List[NotificationItem] = []
+        self.audit_logs: List[AuditLogItem] = []
         self.config: SystemConfig = SystemConfig()
         self.current_user = {
             "name": "Officer Rajesh Kumar",
@@ -27,6 +32,49 @@ class DatabaseState:
             "department": "District Atrocity Protection Unit, Rangareddy",
             "email": "rajesh.kumar@telangana.gov.in"
         }
+        loaded = self.load_from_disk()
+        if not loaded:
+            self.reset_demo_data()
+
+    def save_to_disk(self):
+        try:
+            os.makedirs(DATA_DIR, exist_ok=True)
+            data = {
+                "cases": [c.model_dump() for c in self.cases],
+                "followups": [f.model_dump() for f in self.followups],
+                "notifications": [n.model_dump() for n in self.notifications],
+                "audit_logs": [a.model_dump() for a in self.audit_logs],
+                "config": self.config.model_dump()
+            }
+            with open(DB_FILE, "w", encoding="utf-8") as f:
+                json.dump(data, f, indent=2, ensure_ascii=False)
+        except Exception as e:
+            print(f"[WARN] Failed to persist database state: {e}")
+
+    def load_from_disk(self) -> bool:
+        try:
+            if not os.path.exists(DB_FILE):
+                return False
+            with open(DB_FILE, "r", encoding="utf-8") as f:
+                data = json.load(f)
+            self.cases = [CaseRecord(**c) for c in data.get("cases", [])]
+            self.followups = [FollowUpItem(**fo) for fo in data.get("followups", [])]
+            self.notifications = [NotificationItem(**n) for n in data.get("notifications", [])]
+            self.audit_logs = [AuditLogItem(**a) for a in data.get("audit_logs", [])]
+            if "config" in data:
+                self.config = SystemConfig(**data["config"])
+            return len(self.cases) > 0
+        except Exception as e:
+            print(f"[WARN] Failed to load db_state from disk, fallback to demo seeders: {e}")
+            return False
+
+    def reset_demo_data(self):
+        self.cases = build_demo_cases()
+        self.followups = build_demo_followups()
+        self.notifications = build_demo_notifications()
+        self.audit_logs = build_demo_audit_logs()
+        self.config = SystemConfig()
+        self.save_to_disk()
 
     def log_audit(self, action: str, case_id: Optional[str], access_type: str, details: str, user_name: Optional[str] = None, role: Optional[UserRole] = None):
         u_name = user_name or self.current_user["name"]
@@ -43,6 +91,7 @@ class DatabaseState:
             details=details
         )
         self.audit_logs.insert(0, log_entry)
+        self.save_to_disk()
 
     def get_case_by_number(self, case_number: str) -> Optional[CaseRecord]:
         for c in self.cases:

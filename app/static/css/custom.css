@@ -84,3 +84,39 @@ body.font-size-xl {
     background: linear-gradient(180deg, #042f2e 0%, #0f172a 100%);
     border-radius: 0.5rem;
 }
+
+/* Mobile Responsiveness & Safe Area Insets (iPhone & Android) */
+html, body {
+    max-width: 100%;
+    overflow-x: hidden;
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* Prevent auto-zoom on iOS Safari when focusing form inputs */
+@media (max-width: 768px) {
+    input[type="text"],
+    input[type="password"],
+    input[type="date"],
+    input[type="time"],
+    select,
+    textarea {
+        font-size: 16px !important;
+    }
+}
+
+/* Safe area support for notched phones */
+#mobileBottomNav {
+    padding-bottom: max(0.5rem, env(safe-area-inset-bottom));
+}
+
+/* Touch-friendly target minimums on mobile */
+@media (max-width: 640px) {
+    button, a.btn, select {
+        min-height: 40px;
+    }
+    .touch-target {
+        min-height: 44px;
+        min-width: 44px;
+    }
+}
+

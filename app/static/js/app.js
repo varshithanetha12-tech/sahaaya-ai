@@ -31,6 +31,8 @@ const App = {
 
     init: async function() {
         console.log("Initializing Sahaaya AI Platform...");
+        this.registerServiceWorker();
+        this.setupPwaInstallPrompt();
         await this.loadCurrentUser();
         await this.loadNotifications();
         await this.loadConfig();
@@ -39,6 +41,37 @@ const App = {
         
         // Auto-load cases list
         await this.fetchCases();
+    },
+
+    registerServiceWorker: function() {
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('/sw.js').then((reg) => {
+                    console.log('[PWA] Service Worker registered successfully with scope:', reg.scope);
+                }).catch((err) => {
+                    console.log('[PWA] Service Worker registration skipped:', err);
+                });
+            });
+        }
+    },
+
+    setupPwaInstallPrompt: function() {
+        window.addEventListener('beforeinstallprompt', (e) => {
+            e.preventDefault();
+            this.deferredPwaPrompt = e;
+            console.log('[PWA] Install prompt captured for Add to Home Screen.');
+        });
+    },
+
+    toggleMobileMenu: function() {
+        const drawer = document.getElementById("mobileNavDrawer");
+        if (!drawer) return;
+        drawer.classList.toggle("hidden");
+    },
+
+    closeMobileMenu: function() {
+        const drawer = document.getElementById("mobileNavDrawer");
+        if (drawer) drawer.classList.add("hidden");
     },
 
     loadCurrentUser: async function() {
@@ -384,26 +417,84 @@ const App = {
         }
     },
 
-    toggleConvVoice: function() {
+    speechRecognizer: null,
+    activeMicStream: null,
+
+    toggleConvVoice: async function() {
         this.state.isConvRecording = !this.state.isConvRecording;
         const btn = document.getElementById("convVoiceToggleBtn");
         const btnText = document.getElementById("convVoiceBtnText");
         const indicator = document.getElementById("convAudioIndicator");
 
         if (this.state.isConvRecording) {
+            let micGranted = false;
+
+            // 1. Microphone hardware permission handling
+            if (navigator.mediaDevices && navigator.mediaDevices.getUserMedia) {
+                try {
+                    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    micGranted = true;
+                    this.activeMicStream = stream;
+                    console.log("[Audio] Microphone permission granted.");
+                } catch (err) {
+                    console.log("[Audio] Microphone permission denied or unavailable:", err);
+                    this.showToast("Microphone access unavailable or denied. Fallback to simulated acoustic prosody active.", "warning");
+                }
+            } else {
+                this.showToast("Microphone API not supported on this browser. Voice simulation active.", "info");
+            }
+
+            // 2. Web Speech API live voice-to-text if supported
+            const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+            if (SpeechRec && micGranted) {
+                try {
+                    this.speechRecognizer = new SpeechRec();
+                    this.speechRecognizer.continuous = true;
+                    this.speechRecognizer.interimResults = true;
+                    this.speechRecognizer.lang = this.state.convLanguage === "Telugu" ? "te-IN" : (this.state.convLanguage === "Hindi" ? "hi-IN" : "en-IN");
+                    this.speechRecognizer.onresult = (evt) => {
+                        let transcript = "";
+                        for (let i = evt.resultIndex; i < evt.results.length; ++i) {
+                            transcript += evt.results[i][0].transcript;
+                        }
+                        const input = document.getElementById("convUserInput");
+                        if (input && transcript) {
+                            input.value = transcript;
+                        }
+                    };
+                    this.speechRecognizer.start();
+                } catch (e) {
+                    console.log("[SpeechRecognition] Initialization notice:", e);
+                }
+            }
+
             if (btn) {
                 btn.classList.add("bg-rose-600", "text-white");
                 btn.classList.remove("bg-slate-100", "text-slate-700");
             }
             if (btnText) btnText.innerHTML = `<span class="inline-block w-2.5 h-2.5 bg-white rounded-full mr-1.5 animate-ping"></span> Stop Recording (Listening...)`;
             if (indicator) indicator.classList.remove("hidden");
-            this.showToast("Voice stream active. Acoustic pitch, tremor and hesitation markers tracking enabled.", "info");
+            this.showToast(micGranted ? "Listening via microphone..." : "Voice stream active. Acoustic prosody tracking enabled.", "info");
 
             const input = document.getElementById("convUserInput");
             if (input && !input.value.trim()) {
-                input.value = "నమస్కారం... మా గ్రామంలో మా కుటుంబంపై నిరంతరం బెదిరింపులు వస్తున్నాయి. రాత్రిపూట ఇంటికి వచ్చి చంపేస్తామని భయపెడుతున్నారు... తాగడానికి నీళ్లు కూడా బంద్ చేశారు... చాలా భయంగా ఉంది...";
+                input.value = this.state.convLanguage === "Telugu"
+                    ? "నమస్కారం... మా గ్రామంలో మా కుటుంబంపై నిరంతరం బెదిరింపులు వస్తున్నాయి. రాత్రిపూట ఇంటికి వచ్చి చంపేస్తామని భయపెడుతున్నారు... తాగడానికి నీళ్లు కూడా బంద్ చేశారు... చాలా భయంగా ఉంది..."
+                    : "Our family is facing continuous death threats and social boycott in our village. Night intimidation around our house. We are deeply frightened and cut off from help.";
             }
         } else {
+            // Stop speech recognition and hardware stream
+            if (this.speechRecognizer) {
+                try { this.speechRecognizer.stop(); } catch (e) {}
+                this.speechRecognizer = null;
+            }
+            if (this.activeMicStream) {
+                try {
+                    this.activeMicStream.getTracks().forEach(t => t.stop());
+                } catch (e) {}
+                this.activeMicStream = null;
+            }
+
             if (btn) {
                 btn.classList.remove("bg-rose-600", "text-white");
                 btn.classList.add("bg-slate-100", "text-slate-700");

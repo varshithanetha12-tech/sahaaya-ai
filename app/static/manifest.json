@@ -1,0 +1,56 @@
+{
+  "name": "Sahaaya AI – Real-Time Stress & Trauma Support",
+  "short_name": "Sahaaya AI",
+  "id": "sahaaya-ai-triage-pwa",
+  "start_url": "/",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "background_color": "#f8fafc",
+  "theme_color": "#0f766e",
+  "orientation": "portrait-primary",
+  "description": "Victim-centric AI decision-support and real-time stress & trauma triage platform for national atrocity helplines, chatbot, IVRS, and integrated portals.",
+  "categories": ["government", "health", "medical", "social"],
+  "icons": [
+    {
+      "src": "/static/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/static/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/static/icons/icon-maskable.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/static/icons/icon.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Start Assessment",
+      "url": "/#victim-view",
+      "description": "Begin a confidential stress and trauma assessment"
+    },
+    {
+      "name": "Emergency SOS",
+      "url": "/#sos",
+      "description": "National Atrocity Helpline 14566 & 112"
+    },
+    {
+      "name": "Officer Dashboard",
+      "url": "/#officer-view",
+      "description": "Authorized protection officer triage console"
+    }
+  ]
+}

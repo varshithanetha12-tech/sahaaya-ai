@@ -1,5 +1,5 @@
 import os
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
@@ -14,7 +14,7 @@ from app.api.audit import router as audit_router
 from app.api.auth import router as auth_router
 
 app = FastAPI(
-    title="Sahaaya AI",
+    title="Sahaaya AI – Real-Time Stress & Trauma Support",
     description=(
         "AI-assisted Real-Time Stress and Trauma Assessment Platform for national atrocity helplines, "
         "integrated grievance portals, chatbots, IVRS, and digital interfaces. "
@@ -23,13 +23,29 @@ app = FastAPI(
     version="2.4.0"
 )
 
+# Production-safe CORS configuration
+raw_origins = os.environ.get("CORS_ORIGINS", "*")
+origins = [o.strip() for o in raw_origins.split(",") if o.strip()]
+if not origins:
+    origins = ["*"]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Security headers middleware
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "SAMEORIGIN"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    return response
 
 # Register API Routers
 app.include_router(assessment_router)
@@ -52,3 +68,27 @@ async def root():
     if os.path.exists(index_file):
         return FileResponse(index_file)
     return {"message": "Sahaaya AI Platform API is online."}
+
+@app.get("/manifest.json")
+async def manifest_shortcut():
+    manifest_file = os.path.join(static_dir, "manifest.json")
+    if os.path.exists(manifest_file):
+        return FileResponse(manifest_file, media_type="application/manifest+json")
+    return {"name": "Sahaaya AI"}
+
+@app.get("/sw.js")
+async def sw_shortcut():
+    sw_file = os.path.join(static_dir, "sw.js")
+    if os.path.exists(sw_file):
+        return FileResponse(sw_file, media_type="application/javascript")
+    return ""
+
+@app.get("/health")
+@app.get("/api/health")
+async def health_check():
+    return {
+        "status": "healthy",
+        "service": "Sahaaya AI",
+        "version": "2.4.0",
+        "mode": "production" if os.environ.get("ENV", "development").lower() == "production" else "development"
+    }

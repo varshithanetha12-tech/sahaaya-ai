@@ -35,3 +35,18 @@ async def get_system_health():
         "audit_ledger_status": "INTEGRITY_VERIFIED (HMAC-SHA256)",
         "uptime": "99.98%"
     }
+
+@router.post("/reset-demo-data")
+async def reset_demo_data():
+    """
+    Restore baseline synthetic evaluation demo cases and follow-ups.
+    """
+    db.reset_demo_data()
+    db.log_audit(
+        action="Reset Demo Data to Initial State",
+        case_id=None,
+        access_type="WRITE",
+        details="Restored baseline evaluation dataset (NHAA-1001 to NHAA-1010)."
+    )
+    return {"success": True, "message": "Demo data restored successfully.", "total_cases": len(db.cases)}
+

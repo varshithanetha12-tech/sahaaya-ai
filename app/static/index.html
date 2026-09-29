@@ -2,8 +2,26 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sahaaya AI — Real-Time Stress & Trauma Assessment Platform</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
+    <title>Sahaaya AI – Real-Time Stress & Trauma Support</title>
+    <meta name="description" content="Victim-centric AI decision-support and real-time stress & trauma triage platform for national atrocity helplines, chatbots, IVRS, and grievance portals.">
+    <meta name="theme-color" content="#0f766e">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Sahaaya AI">
+    
+    <!-- Open Graph / Social SEO -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Sahaaya AI – Real-Time Stress & Trauma Support">
+    <meta property="og:description" content="AI decision-support and distress triage platform for victim assistance and prioritization.">
+    <meta property="og:image" content="/static/icons/icon-512.png">
+
+    <!-- Favicon & PWA Manifest -->
+    <link rel="icon" type="image/svg+xml" href="/static/icons/icon.svg">
+    <link rel="apple-touch-icon" href="/static/icons/icon-192.png">
+    <link rel="manifest" href="/static/manifest.json">
+
     <!-- Tailwind CSS via CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Chart.js via CDN -->
@@ -33,14 +51,14 @@
 <body class="bg-slate-50 text-slate-800 font-sans antialiased min-h-screen flex flex-col font-size-md">
 
     <!-- TOP PUBLIC SERVICE & ACCESSIBILITY BAR -->
-    <div class="bg-slate-900 text-slate-300 text-xs py-1.5 px-4 sm:px-8 border-b border-slate-800 flex flex-wrap items-center justify-between">
-        <div class="flex items-center space-x-3">
+    <div class="bg-slate-900 text-slate-300 text-xs py-1.5 px-3 sm:px-8 border-b border-slate-800 flex flex-wrap items-center justify-between gap-1">
+        <div class="flex items-center space-x-2 sm:space-x-3">
             <span class="inline-block w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-            <span class="font-medium tracking-wide">National Atrocity Helpline & Integrated Triage Portal • Government of India Support Ecosystem</span>
+            <span class="font-medium tracking-wide text-[11px] sm:text-xs">National Atrocity Helpline & Triage Portal • 14566</span>
         </div>
-        <div class="flex items-center space-x-4 mt-1 sm:mt-0">
+        <div class="flex items-center space-x-2 sm:space-x-4">
             <!-- Accessibility font size buttons -->
-            <div class="flex items-center space-x-1 border-r border-slate-700 pr-3">
+            <div class="hidden sm:flex items-center space-x-1 border-r border-slate-700 pr-3">
                 <span class="text-slate-400 mr-1 text-[11px]">Text:</span>
                 <button onclick="App.setFontSize('font-size-sm')" class="px-1.5 py-0.5 rounded hover:bg-slate-800 text-[11px] font-bold">A-</button>
                 <button onclick="App.setFontSize('font-size-md')" class="px-1.5 py-0.5 rounded hover:bg-slate-800 text-[11px] font-bold">A</button>
@@ -52,8 +70,8 @@
                 <span>Contrast</span>
             </button>
             <!-- 24x7 Helpline Hotline Tag -->
-            <span class="bg-rose-900/60 text-rose-300 px-2 py-0.5 rounded font-mono font-bold text-[11px]">
-                SOS Toll-Free: 14566 / 112
+            <span class="bg-rose-900/80 text-rose-200 px-2 py-0.5 rounded font-mono font-bold text-[10px] sm:text-[11px]">
+                SOS: 14566 / 112
             </span>
         </div>
     </div>
@@ -69,13 +87,13 @@
                 <div>
                     <div class="font-extrabold text-base tracking-tight text-slate-900 flex items-center space-x-2">
                         <span>Sahaaya AI</span>
-                        <span class="text-[10px] bg-teal-100 text-teal-800 font-bold px-1.5 py-0.5 rounded tracking-normal">TRIAGE PLATFORM</span>
+                        <span class="text-[10px] bg-teal-100 text-teal-800 font-bold px-1.5 py-0.5 rounded tracking-normal">TRIAGE</span>
                     </div>
-                    <div class="text-[11px] text-slate-500 font-medium -mt-0.5">Real-Time Stress & Trauma Assessment System</div>
+                    <div class="text-[11px] text-slate-500 font-medium -mt-0.5 hidden sm:block">Real-Time Stress & Trauma Assessment System</div>
                 </div>
             </div>
 
-            <!-- Main Nav Items -->
+            <!-- Main Nav Items (Desktop) -->
             <nav class="hidden md:flex items-center space-x-1 lg:space-x-2 text-xs font-semibold">
                 <button id="nav-landing-view" onclick="App.switchTab('landing-view')" class="nav-link px-3 py-2 rounded-md hover:bg-slate-100 transition border-b-2 border-transparent">
                     Home
@@ -101,8 +119,8 @@
                 </button>
             </nav>
 
-            <!-- User Role Switcher & Notifications -->
-            <div class="flex items-center space-x-3">
+            <!-- User Role Switcher, Notifications & Mobile Hamburger -->
+            <div class="flex items-center space-x-2 sm:space-x-3">
                 <!-- Notification Bell -->
                 <div class="relative">
                     <button id="notifBellBtn" class="p-2 text-slate-500 hover:text-slate-800 hover:bg-slate-100 rounded-full relative transition">
@@ -120,7 +138,7 @@
                 </div>
 
                 <!-- Active Role Selector Dropdown -->
-                <div class="flex items-center bg-slate-100 rounded-lg p-1 border border-slate-200">
+                <div class="hidden sm:flex items-center bg-slate-100 rounded-lg p-1 border border-slate-200">
                     <span class="text-[11px] text-slate-500 px-2 font-medium">Role:</span>
                     <select id="roleSelector" onchange="App.switchRole(this.value)" class="bg-transparent text-xs font-bold text-slate-800 focus:outline-none cursor-pointer">
                         <option value="Authorized Officer">Authorized Officer</option>
@@ -130,15 +148,51 @@
                         <option value="Victim/User">Victim / User</option>
                     </select>
                 </div>
+
+                <!-- Mobile Hamburger Button -->
+                <button id="mobileMenuToggleBtn" onclick="App.toggleMobileMenu()" class="md:hidden p-2 text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg focus:outline-none touch-target" aria-label="Toggle navigation menu">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path id="hamburgerIcon" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- MOBILE NAVIGATION DRAWER -->
+        <div id="mobileNavDrawer" class="hidden md:hidden bg-white border-b border-slate-200 px-4 py-3 space-y-1 shadow-md">
+            <button onclick="App.switchTab('landing-view'); App.closeMobileMenu();" class="w-full text-left px-3 py-2.5 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-100 flex items-center space-x-2">
+                <span>🏠 Home</span>
+            </button>
+            <button onclick="App.switchTab('victim-view'); App.closeMobileMenu();" class="w-full text-left px-3 py-2.5 rounded-lg text-xs font-bold text-teal-800 bg-teal-50 flex items-center space-x-2">
+                <span>🛡️ Victim Support Portal</span>
+            </button>
+            <button onclick="App.switchTab('officer-view'); App.closeMobileMenu();" class="w-full text-left px-3 py-2.5 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-100 flex items-center space-x-2">
+                <span>👮 Officer Triage Console</span>
+            </button>
+            <button onclick="App.switchTab('followups-view'); App.closeMobileMenu();" class="w-full text-left px-3 py-2.5 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-100 flex items-center space-x-2">
+                <span>📅 Longitudinal Follow-ups</span>
+            </button>
+            <button onclick="App.switchTab('resources-view'); App.closeMobileMenu();" class="w-full text-left px-3 py-2.5 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-100 flex items-center space-x-2">
+                <span>📍 Support Directory</span>
+            </button>
+            <button onclick="App.switchTab('analytics-view'); App.closeMobileMenu();" class="w-full text-left px-3 py-2.5 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-100 flex items-center space-x-2">
+                <span>📊 Analytics & Trends</span>
+            </button>
+            <button onclick="App.switchTab('admin-view'); App.closeMobileMenu();" class="w-full text-left px-3 py-2.5 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-100 flex items-center space-x-2">
+                <span>⚙️ System Governance</span>
+            </button>
+            <div class="pt-2 border-t border-slate-100">
+                <button onclick="App.triggerEmergencySOS(); App.closeMobileMenu();" class="w-full py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-black text-center shadow">
+                    🚨 Emergency SOS (14566 / 112)
+                </button>
             </div>
         </div>
 
         <!-- HACKATHON PRESENTATION & DEMO MODE TOOLBAR -->
-        <div class="bg-gradient-to-r from-teal-900 via-slate-900 to-indigo-950 text-white px-4 py-2 text-xs border-t border-teal-800 flex flex-wrap items-center justify-between gap-2 shadow-inner">
-            <div class="flex items-center space-x-2">
-                <span class="bg-teal-500 text-slate-950 font-black text-[10px] px-2 py-0.5 rounded uppercase tracking-wider">DEMO PRESETS</span>
-                <span class="text-slate-300 hidden sm:inline text-[11px]">Instant evaluation scenarios:</span>
-                <div class="flex items-center space-x-1.5">
+        <div class="bg-gradient-to-r from-teal-900 via-slate-900 to-indigo-950 text-white px-3 sm:px-4 py-2 text-xs border-t border-teal-800 flex flex-wrap items-center justify-between gap-2 shadow-inner">
+            <div class="flex items-center space-x-2 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0">
+                <span class="bg-teal-500 text-slate-950 font-black text-[10px] px-2 py-0.5 rounded uppercase tracking-wider shrink-0">DEMO PRESETS</span>
+                <div class="flex items-center space-x-1.5 shrink-0">
                     <button onclick="App.loadDemoPreset('NHAA-1001')" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-emerald-400 border border-emerald-500/40 text-[11px] font-semibold transition">
                         🟢 Case 001 (Low SVI: 22)
                     </button>
@@ -160,7 +214,7 @@
     </header>
 
     <!-- CONTENT VIEWS CONTAINER -->
-    <main class="flex-grow">
+    <main class="flex-grow pb-24 md:pb-8">
 
         <!-- ================================================================= -->
         <!-- VIEW 1: LANDING PAGE -->
@@ -2085,6 +2139,30 @@
             </div>
         </div>
     </footer>
+
+    <!-- MOBILE BOTTOM NAVIGATION BAR -->
+    <nav id="mobileBottomNav" class="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 py-1 px-2 flex items-center justify-around text-[10px] font-bold shadow-lg">
+        <button onclick="App.switchTab('landing-view')" class="flex flex-col items-center py-1 px-2 text-slate-600 hover:text-teal-700 touch-target">
+            <span class="text-base">🏠</span>
+            <span>Home</span>
+        </button>
+        <button onclick="App.switchTab('victim-view')" class="flex flex-col items-center py-1 px-2 text-teal-700 font-extrabold touch-target">
+            <span class="text-base">🛡️</span>
+            <span>Support</span>
+        </button>
+        <button onclick="App.triggerEmergencySOS()" class="flex flex-col items-center py-1 px-2 text-rose-600 font-black animate-pulse touch-target">
+            <span class="text-base">🚨</span>
+            <span>Help Now</span>
+        </button>
+        <button onclick="App.switchTab('followups-view')" class="flex flex-col items-center py-1 px-2 text-slate-600 hover:text-teal-700 touch-target">
+            <span class="text-base">📅</span>
+            <span>Follow-up</span>
+        </button>
+        <button onclick="App.switchTab('officer-view')" class="flex flex-col items-center py-1 px-2 text-slate-600 hover:text-teal-700 touch-target">
+            <span class="text-base">👮</span>
+            <span>Officer</span>
+        </button>
+    </nav>
 
     <!-- SCRIPTS -->
     <script src="/static/js/i18n.js"></script>
